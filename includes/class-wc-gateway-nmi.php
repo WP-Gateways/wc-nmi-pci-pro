@@ -379,7 +379,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
         add_filter( 'script_loader_tag', array( $this, 'add_public_key_to_js' ), 10, 2 );
 
 		wp_enqueue_script( 'nmi-collect-js', 'https://secure.nmi.com/token/Collect.js', '', null, true );
-		wp_enqueue_script( 'woocommerce_nmi', plugins_url( 'assets/js/nmi.js', WC_NMI_MAIN_FILE ), array( 'jquery-payment', 'nmi-collect-js' ), WC_NMI_VERSION, true );
+		wp_enqueue_script( 'woocommerce_nmi', plugins_url( 'assets/js/nmi.js', WC_NMI_PCI_MAIN_FILE ), array( 'jquery-payment', 'nmi-collect-js' ), WC_NMI_PCI_VERSION, true );
 
 		$nmi_params = array(
 			'public_key'           	=> $this->public_key,

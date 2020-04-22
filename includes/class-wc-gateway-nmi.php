@@ -436,7 +436,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 				}
 
 				// Check for card type supported or not
-				if( ! in_array( $this->get_card_type( $_POST['nmi-card-number'], 'pattern', 'name' ), $this->allowed_card_types ) ) {
+				if( ! in_array( $this->get_card_type( wc_clean( $_POST['nmi-card-number'] ), 'pattern', 'name' ), $this->allowed_card_types ) ) {
 					$this->log( sprintf( __( 'Card type being used is not one of supported types in plugin settings: %s', 'wc-nmi' ), $this->get_card_type( $_POST['nmi-card-number'] ) ) );
 					throw new Exception( __( 'Card Type Not Accepted', 'wc-nmi' ) );
 				}
@@ -445,11 +445,11 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			if( $js_response = $this->get_nmi_js_response() ) {
 				$post_data['payment_token'] = $js_response['token'];
 			} else {
-				$expiry = explode( ' / ', $_POST['nmi-card-expiry'] );
+				$expiry = explode( ' / ', wc_clean( $_POST['nmi-card-expiry'] ) );
 				$expiry[1] = substr( $expiry[1], -2 );
-				$post_data['ccnumber']	= $_POST['nmi-card-number'];
+				$post_data['ccnumber']	= wc_clean( $_POST['nmi-card-number'] );
 				$post_data['ccexp']		= $expiry[0] . $expiry[1];
-				$post_data['cvv']		= $_POST['nmi-card-cvc'];
+				$post_data['cvv']		= wc_clean( $_POST['nmi-card-cvc'] );
 			}
 
 			$description = sprintf( __( '%s - Order %s', 'wc-nmi' ), wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ), $order->get_order_number() );

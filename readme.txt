@@ -1,4 +1,4 @@
-=== WooCommerce NMI Gateway PCI ===
+=== WP NMI Gateway PCI for WooCommerce ===
 Contributors: mohsinoffline
 Donate link: https://wpgateways.com/support/send-payment/
 Tags: nmi, network merchants, payment gateway, woocommerce, pci, pci-dss, tokenization, woocommerce subscriptions, recurring payments, pre order
@@ -42,7 +42,7 @@ This plugin is not affiliated with or supported by NMI, WooCommerce.com or Autom
 
 == Installation ==
 
-1. Upload `woocommerce-nmi-gateway-pci` folder/directory to the `/wp-content/plugins/` directory
+1. Upload `wp-nmi-gateway-pci-woocommerce` folder/directory to the `/wp-content/plugins/` directory
 2. Activate the plugin (WordPress -> Plugins).
 3. Go to the WooCommerce settings page (WordPress -> WooCommerce -> Settings) and select the Payments tab.
 4. Under the Payments tab, you will find all the available payment methods. Find the 'NMI' link in the list and click it.

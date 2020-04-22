@@ -114,7 +114,7 @@ class WC_NMI_PCI {
 	 * Init localisations and files
 	 */
 	public function init() {
-        
+
         if( class_exists( 'WC_NMI_License_Updates' ) ) {
             return;
         }
@@ -153,7 +153,7 @@ class WC_NMI_PCI {
             $this->add_admin_notice( 'bad_environment', 'error', $environment_warning );
             return;
         }
-        
+
         if ( ! defined( 'IFRAME_REQUEST' ) && ( WC_NMI_PCI_VERSION !== get_option( 'wc_nmi_pci_version', '3.0.0' ) ) ) {
             $this->install();
 
@@ -209,7 +209,7 @@ class WC_NMI_PCI {
         if ( ! function_exists( 'curl_init' ) ) {
             return __( 'WooCommerce NMI - cURL is not installed.', 'wc-nmi' );
         }
-        
+
         if( class_exists( 'WC_NMI_License_Updates' ) ) {
             return __( 'There are two WooCommerce NMI extensions installed from Pledged Plugins which can cause conflicts. Please deactivate one of them.', 'wc-nmi' );
         }

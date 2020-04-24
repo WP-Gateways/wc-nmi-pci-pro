@@ -437,7 +437,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
 				// Check for card type supported or not
 				if( ! in_array( $this->get_card_type( wc_clean( $_POST['nmi-card-number'] ), 'pattern', 'name' ), $this->allowed_card_types ) ) {
-					$this->log( sprintf( __( 'Card type being used is not one of supported types in plugin settings: %s', 'wc-nmi' ), $this->get_card_type( $_POST['nmi-card-number'] ) ) );
+					$this->log( sprintf( __( 'Card type being used is not one of supported types in plugin settings: %s', 'wc-nmi' ), $this->get_card_type( wc_clean( $_POST['nmi-card-number'] ) ) ) );
 					throw new Exception( __( 'Card Type Not Accepted', 'wc-nmi' ) );
 				}
 			}

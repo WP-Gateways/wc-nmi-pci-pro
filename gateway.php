@@ -1,15 +1,15 @@
 <?php
 /*
-Plugin Name: WooCommerce NMI Gateway
+Plugin Name: WP NMI Gateway PCI for WooCommerce
 Plugin URI: https://bitbucket.org/pledged/wc-nmi-pci-pro
 Description: A PCI compliant payment gateway for NMI. An NMI account and a server with cURL, SSL support, and a valid SSL certificate is required (for security reasons) for this gateway to function. Requires WC 3.0.0+
-Version: 1.0.0
+Version: 1.0.1
 Author: Pledged Plugins
 Author URI: https://pledgedplugins.com
 Text Domain: wc-nmi
 Domain Path: /languages
 WC requires at least: 3.0.0
-WC tested up to: 4.0
+WC tested up to: 4.2
 
 	Copyright: © Pledged Plugins.
 	License: GNU General Public License v3.0
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WC_NMI_PCI_VERSION', '1.0.0' );
+define( 'WC_NMI_PCI_VERSION', '1.0.1' );
 define( 'WC_NMI_PCI_TEMPLATE_PATH', untrailingslashit( plugin_dir_path( __FILE__ ) ) . '/templates/' );
 define( 'WC_NMI_PCI_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path( __FILE__ ) ), basename( __FILE__ ) ) ) );
 define( 'WC_NMI_PCI_MAIN_FILE', __FILE__ );
@@ -114,7 +114,7 @@ class WC_NMI_PCI {
 	 * Init localisations and files
 	 */
 	public function init() {
-        
+
         if( class_exists( 'WC_NMI_License_Updates' ) ) {
             return;
         }
@@ -153,7 +153,7 @@ class WC_NMI_PCI {
             $this->add_admin_notice( 'bad_environment', 'error', $environment_warning );
             return;
         }
-        
+
         if ( ! defined( 'IFRAME_REQUEST' ) && ( WC_NMI_PCI_VERSION !== get_option( 'wc_nmi_pci_version', '3.0.0' ) ) ) {
             $this->install();
 
@@ -209,7 +209,7 @@ class WC_NMI_PCI {
         if ( ! function_exists( 'curl_init' ) ) {
             return __( 'WooCommerce NMI - cURL is not installed.', 'wc-nmi' );
         }
-        
+
         if( class_exists( 'WC_NMI_License_Updates' ) ) {
             return __( 'There are two WooCommerce NMI extensions installed from Pledged Plugins which can cause conflicts. Please deactivate one of them.', 'wc-nmi' );
         }

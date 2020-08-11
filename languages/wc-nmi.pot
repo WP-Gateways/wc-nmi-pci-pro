@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: WP NMI Gateway PCI for WooCommerce\n"
-"POT-Creation-Date: 2020-06-12 14:16+0530\n"
-"PO-Revision-Date: 2020-06-12 14:15+0530\n"
+"POT-Creation-Date: 2020-08-11 19:44+0530\n"
+"PO-Revision-Date: 2020-08-11 19:44+0530\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -409,20 +409,25 @@ msgstr ""
 msgid "Gateway Error: %s"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:607 includes/class-wc-gateway-nmi.php:617
+#: includes/class-wc-gateway-nmi.php:547
+#, php-format
+msgid "NMI failure reason: %s"
+msgstr ""
+
+#: includes/class-wc-gateway-nmi.php:611 includes/class-wc-gateway-nmi.php:621
 msgid "There was an error with the gateway response."
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:613
+#: includes/class-wc-gateway-nmi.php:617
 #, php-format
 msgid "Unrecognized response from the gateway: %s"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:621
+#: includes/class-wc-gateway-nmi.php:625
 msgid "Your card has been declined."
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:698
+#: includes/class-wc-gateway-nmi.php:677
 #, php-format
 msgid "Refunded %s - Refund ID: %s - Reason: %s"
 msgstr ""

@@ -543,6 +543,10 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			wc_add_notice( sprintf( __( 'Gateway Error: %s', 'wc-nmi' ), $e->getMessage() ), 'error' );
 			$this->log( sprintf( __( 'Gateway Error: %s', 'wc-nmi' ), $e->getMessage() ) );
 
+			if( is_wp_error( $response ) && $response = $response->get_error_data() ) {
+                $order->add_order_note( sprintf( __( 'NMI failure reason: %s', 'wc-nmi' ), $response['responsetext'] ) );
+            }
+
 			do_action( 'wc_gateway_nmi_process_payment_error', $e, $order );
 
 			$order->update_status( 'failed' );
@@ -618,11 +622,11 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
         }
 
         if( $result['response'] == 2 ) {
-            return new WP_Error( 'decline_response', __( 'Your card has been declined.', 'wc-nmi' ) );
+            return new WP_Error( 'decline_response', __( 'Your card has been declined.', 'wc-nmi' ), $result );
 		}
 
         if( $result['response'] == 3 ) {
-            return new WP_Error( 'error_response', $result['responsetext'] );
+            return new WP_Error( 'error_response', $result['responsetext'], $result );
 		}
 
         return $result;
@@ -632,35 +636,10 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	function get_line_items( $order ) {
 		$line_items = array();
 		// order line items
-		foreach ( $this->get_order_line_items( $order ) as $item ) {
-			if ( $item->item_total >= 0 ) {
-				$line_items[] = $item->name . ' x ' . $item->quantity;
-			}
+		foreach ( $order->get_items() as $item ) {
+			$line_items[] = $item->get_name() . ' x ' .$item->get_quantity();
 		}
 		return implode( ', ', $line_items );
-	}
-
-	function get_order_line_items( $order ) {
-		$line_items = array();
-
-		foreach ( $order->get_items() as $id => $item ) {
-			$line_item = new stdClass();
-			$product = $order->get_product_from_item( $item );
-
-			$line_item->id          = $id;
-			$line_item->name        = htmlentities( $item['name'], ENT_QUOTES, 'UTF-8', false );
-
-			$line_item->quantity    = $item['qty'];
-			$line_item->item_total  = isset( $item['recurring_line_total'] ) ? $item['recurring_line_total'] : $order->get_item_total( $item );
-			$line_item->line_total  = $order->get_line_total( $item );
-
-			$line_item->product     = is_object( $product ) ? $product : null;
-			$line_item->item        = $item;
-
-			$line_items[] = $line_item;
-		}
-
-		return $line_items;
 	}
 
 	/**

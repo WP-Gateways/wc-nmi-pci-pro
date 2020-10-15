@@ -621,11 +621,11 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
         }
 
         if( $result['response'] == 2 ) {
-            return new WP_Error( 'decline_response', __( 'Your card has been declined.', 'wc-nmi' ), $result );
+            return new WP_Error( 'decline_response', '<!-- Error: ' . $result['response_code'] . ' --> ' . __( 'Your card has been declined.', 'wc-nmi' ), $result );
 		}
 
         if( $result['response'] == 3 ) {
-            return new WP_Error( 'error_response', $result['responsetext'], $result );
+            return new WP_Error( 'error_response', '<!-- Error: ' . $result['response_code'] . ' --> ' . $result['responsetext'], $result );
 		}
 
         return $result;

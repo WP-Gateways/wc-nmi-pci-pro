@@ -8,7 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @extends WC_Payment_Gateway
  */
-
 class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
     const NMI_REQUEST_URL_LOGIN = 'https://secure.networkmerchants.com/api/transact.php';
@@ -418,8 +417,8 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	 */
 	public function process_payment( $order_id, $retry = true ) {
 
-        $order       = wc_get_order( $order_id );
-        $token_id 	 = isset( $_POST['wc-nmi-payment-token'] ) ? wc_clean( $_POST['wc-nmi-payment-token'] ) : '';
+        $order		= wc_get_order( $order_id );
+        $token_id 	= isset( $_POST['wc-nmi-payment-token'] ) ? wc_clean( $_POST['wc-nmi-payment-token'] ) : '';
 
 		$this->log( "Info: Beginning processing payment for order $order_id for the amount of {$order->get_total()}" );
 
@@ -544,7 +543,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			$this->log( sprintf( __( 'Gateway Error: %s', 'wc-nmi' ), $e->getMessage() ) );
 
 			if( is_wp_error( $response ) && $response = $response->get_error_data() ) {
-                $order->add_order_note( sprintf( __( 'NMI failure reason: %s', 'wc-nmi' ), $response['responsetext'] ) );
+                $order->add_order_note( sprintf( __( 'NMI failure reason: %s', 'wc-nmi' ), $response['response_code'] . ' - ' . $response['responsetext'] ) );
             }
 
 			do_action( 'wc_gateway_nmi_process_payment_error', $e, $order );
@@ -622,11 +621,11 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
         }
 
         if( $result['response'] == 2 ) {
-            return new WP_Error( 'decline_response', __( 'Your card has been declined.', 'wc-nmi' ), $result );
+            return new WP_Error( 'decline_response', '<!-- Error: ' . $result['response_code'] . ' --> ' . __( 'Your card has been declined.', 'wc-nmi' ), $result );
 		}
 
         if( $result['response'] == 3 ) {
-            return new WP_Error( 'error_response', $result['responsetext'], $result );
+            return new WP_Error( 'error_response', '<!-- Error: ' . $result['response_code'] . ' --> ' . $result['responsetext'], $result );
 		}
 
         return $result;

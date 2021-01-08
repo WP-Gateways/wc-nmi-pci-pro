@@ -625,7 +625,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
         if( $result['response'] == 2 ) {
 			$error_message = '<!-- Error: ' . $result['response_code'] . ' --> ' . __( 'Your card has been declined.', 'wc-nmi' );
-			return new WP_Error( 'error_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ), $result );
+			return new WP_Error( 'decline_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ), $result );
 		}
 
         if( $result['response'] == 3 ) {

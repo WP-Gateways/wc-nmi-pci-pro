@@ -5,7 +5,7 @@ Tags: nmi, network merchants, payment gateway, woocommerce, pci, pci-dss, tokeni
 Plugin URI: https://bitbucket.org/pledged/wc-nmi-pci-pro
 Author URI: https://pledgedplugins.com
 Requires at least: 4.4
-Tested up to: 5.6
+Tested up to: 5.8
 Requires PHP: 5.6
 Stable tag: 1.0.4
 License: GPLv2 or later
@@ -42,7 +42,7 @@ This plugin is not affiliated with or supported by NMI, WooCommerce.com or Autom
 
 == Installation ==
 
-1. Upload `wp-nmi-gateway-pci-woocommerce` folder/directory to the `/wp-content/plugins/` directory
+1. Upload `wp-nmi-gateway-pci-woocommerce` folder/directory to the `/wp-content/plugins/` directory.
 2. Activate the plugin (WordPress -> Plugins).
 3. Go to the WooCommerce settings page (WordPress -> WooCommerce -> Settings) and select the Payments tab.
 4. Under the Payments tab, you will find all the available payment methods. Find the 'NMI' link in the list and click it.
@@ -61,10 +61,11 @@ A valid SSL certificate is required to ensure your customer credit card details 
 == Changelog ==
 
 = 1.0.4 =
+* Updated "WC tested up to" header to 6.0
+* Updated compatibility info to WordPress 5.8
+* Updated minimum WC version to 3.3
 * Added filter on error message displayed at checkout
 * Added error code alongside the failed transaction response reason in order notes
-* Updated "WC tested up to" header to 4.9
-* Updated minimum WC version to 3.3
 
 = 1.0.3 =
 * Updated "WC tested up to" header to 4.8

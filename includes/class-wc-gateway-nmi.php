@@ -607,25 +607,30 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		} elseif( empty( $result ) ) {
-			return new WP_Error( 'invalid_response', __( 'There was an error with the gateway response.', 'wc-nmi' ) );
+			$error_message = __( 'There was an error with the gateway response.', 'wc-nmi' );
+			return new WP_Error( 'invalid_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ) );
 		}
 
         parse_str( $result, $result );
 
         if( count( $result ) < 8 ) {
-            return new WP_Error( 'invalid_response', sprintf( __( 'Unrecognized response from the gateway: %s', 'wc-nmi' ), $response ) );
+			$error_message = sprintf( __( 'Unrecognized response from the gateway: %s', 'wc-nmi' ), $response );
+			return new WP_Error( 'invalid_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ) );
         }
 
         if( !isset( $result['response'] ) || !in_array( $result['response'], array( 1, 2, 3 ) ) ) {
-            return new WP_Error( 'invalid_response', __( 'There was an error with the gateway response.', 'wc-nmi' ) );
+			$error_message = __( 'There was an error with the gateway response.', 'wc-nmi' );
+			return new WP_Error( 'invalid_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ) );
         }
 
         if( $result['response'] == 2 ) {
-            return new WP_Error( 'decline_response', '<!-- Error: ' . $result['response_code'] . ' --> ' . __( 'Your card has been declined.', 'wc-nmi' ), $result );
+			$error_message = '<!-- Error: ' . $result['response_code'] . ' --> ' . __( 'Your card has been declined.', 'wc-nmi' );
+			return new WP_Error( 'decline_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ), $result );
 		}
 
         if( $result['response'] == 3 ) {
-            return new WP_Error( 'error_response', '<!-- Error: ' . $result['response_code'] . ' --> ' . $result['responsetext'], $result );
+			$error_message = '<!-- Error: ' . $result['response_code'] . ' --> ' . $result['responsetext'];
+			return new WP_Error( 'error_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ), $result );
 		}
 
         return $result;

@@ -5,9 +5,9 @@ Tags: nmi, network merchants, payment gateway, woocommerce, pci, pci-dss, tokeni
 Plugin URI: https://bitbucket.org/pledged/wc-nmi-pci-pro
 Author URI: https://pledgedplugins.com
 Requires at least: 4.4
-Tested up to: 5.6
+Tested up to: 5.8
 Requires PHP: 5.6
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,7 +30,7 @@ This plugin enables you to use the NMI payment gateway and accept credit cards d
 
 #### Requirements
 * Active  [NMI](https://www.nmi.com/)  account.
-* [**WooCommerce**](https://woocommerce.com/)  version 3.3.0 or later.
+* [**WooCommerce**](https://woocommerce.com/)  version 3.3 or later.
 * A valid SSL certificate is required to ensure your customer credit card details are safe and make your site PCI DSS compliant. This plugin does not store the customer credit card numbers or sensitive information on your website.
 #### Extend, Contribute, Integrate
 Contributors are welcome to send pull requests via [Bitbucket repository](https://bitbucket.org/pledged/wc-nmi-pci-pro).
@@ -42,7 +42,7 @@ This plugin is not affiliated with or supported by NMI, WooCommerce.com or Autom
 
 == Installation ==
 
-1. Upload `wp-nmi-gateway-pci-woocommerce` folder/directory to the `/wp-content/plugins/` directory
+1. Upload `wp-nmi-gateway-pci-woocommerce` folder/directory to the `/wp-content/plugins/` directory.
 2. Activate the plugin (WordPress -> Plugins).
 3. Go to the WooCommerce settings page (WordPress -> WooCommerce -> Settings) and select the Payments tab.
 4. Under the Payments tab, you will find all the available payment methods. Find the 'NMI' link in the list and click it.
@@ -59,6 +59,13 @@ That's it! You are ready to accept credit cards with your NMI merchant account n
 A valid SSL certificate is required to ensure your customer credit card details are safe and make your site PCI DSS compliant. This plugin does not store the customer credit card numbers or sensitive information on your website.
 
 == Changelog ==
+
+= 1.0.4 =
+* Updated "WC tested up to" header to 6.0
+* Updated compatibility info to WordPress 5.8
+* Updated minimum WC version to 3.3
+* Added filter on error message displayed at checkout
+* Added error code alongside the failed transaction response reason in order notes
 
 = 1.0.3 =
 * Updated "WC tested up to" header to 4.8

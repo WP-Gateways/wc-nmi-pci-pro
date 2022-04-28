@@ -66,6 +66,7 @@ A valid SSL certificate is required to ensure your customer credit card details 
 * Saved "authcode" from transaction response to order meta
 * Updated "WC tested up to" header to 6.5
 * Updated compatibility info to WordPress 5.9
+* General code clean up
 
 = 1.0.4 =
 * Updated "WC tested up to" header to 6.0

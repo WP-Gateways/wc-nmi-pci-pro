@@ -33,18 +33,18 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		$this->title       		  	= $this->get_option( 'title' );
 		$this->description 		  	= $this->get_option( 'description' );
 		$this->enabled     		  	= $this->get_option( 'enabled' );
-		$this->testmode    		  	= $this->get_option( 'testmode' ) === 'yes' ? true : false;
-		$this->api_keys    		  	= $this->get_option( 'api_keys' ) === 'yes' ? true : false;
-		$this->capture     		  	= $this->get_option( 'capture', 'yes' ) === 'yes' ? true : false;
+		$this->testmode    		  	= $this->get_option( 'testmode' ) === 'yes';
+		$this->api_keys    		  	= $this->get_option( 'api_keys' ) === 'yes';
+		$this->capture     		  	= $this->get_option( 'capture', 'yes' ) === 'yes';
 		$this->private_key	   		= $this->get_option( 'private_key' );
 		$this->public_key	   		= $this->get_option( 'public_key' );
 		$this->username	   		  	= $this->get_option( 'username' );
 		$this->password	   		  	= $this->get_option( 'password' );
-		$this->logging     		  	= $this->get_option( 'logging' ) === 'yes' ? true : false;
-		$this->debugging   		  	= $this->get_option( 'debugging' ) === 'yes' ? true : false;
-		$this->line_items  		  	= $this->get_option( 'line_items' ) === 'yes' ? true : false;
+		$this->logging     		  	= $this->get_option( 'logging' ) === 'yes';
+		$this->debugging   		  	= $this->get_option( 'debugging' ) === 'yes';
+		$this->line_items  		  	= $this->get_option( 'line_items' ) === 'yes';
 		$this->allowed_card_types 	= $this->get_option( 'allowed_card_types', array() );
-		$this->customer_receipt   	= $this->get_option( 'customer_receipt' ) === 'yes' ? true : false;
+		$this->customer_receipt   	= $this->get_option( 'customer_receipt' ) === 'yes';
 
 		if ( $this->testmode ) {
 			$this->description .= ' ' . sprintf( __( '<br /><br /><strong>TEST MODE ENABLED</strong><br /> In test mode, you can use the card number 4111111111111111 with any CVC and a valid expiration date or check the documentation "<a href="%s">NMI Direct Post API</a>" for more card numbers.', 'wc-nmi' ), 'https://secure.nmi.com/merchants/resources/integration/download.php?document=directpost' );
@@ -422,10 +422,11 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
 		$this->log( "Info: Beginning processing payment for order $order_id for the amount of {$order->get_total()}" );
 
+		$response = false;
+
 		// Use NMI CURL API for payment
 		try {
 			$post_data = array();
-			$payment_args = array();
 
 			if( !$this->get_nmi_js_response() ) {
 

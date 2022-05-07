@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: WP NMI Gateway PCI for WooCommerce\n"
-"POT-Creation-Date: 2022-04-27 20:18+0530\n"
-"PO-Revision-Date: 2022-04-27 20:18+0530\n"
+"POT-Creation-Date: 2022-05-07 19:41+0530\n"
+"PO-Revision-Date: 2022-05-07 19:41+0530\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -378,26 +378,26 @@ msgid ""
 "the fields are correctly filled in and submit the form again."
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:434
+#: includes/class-wc-gateway-nmi.php:435
 msgid "Credit card details cannot be left incomplete."
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:439
+#: includes/class-wc-gateway-nmi.php:440
 #, php-format
 msgid ""
 "Card type being used is not one of supported types in plugin settings: %s"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:440
+#: includes/class-wc-gateway-nmi.php:441
 msgid "Card Type Not Accepted"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:454
+#: includes/class-wc-gateway-nmi.php:455
 #, php-format
 msgid "%s - Order %s"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:507
+#: includes/class-wc-gateway-nmi.php:508
 #, php-format
 msgid ""
 "NMI charge complete (Charge ID: %s) \n"
@@ -407,7 +407,7 @@ msgid ""
 "CVV2 Response: %s"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:521
+#: includes/class-wc-gateway-nmi.php:522
 #, php-format
 msgid ""
 "NMI charge authorized (Charge ID: %s). Process order to take payment, or "
@@ -419,12 +419,12 @@ msgid ""
 "\n"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:543 includes/class-wc-gateway-nmi.php:544
+#: includes/class-wc-gateway-nmi.php:544 includes/class-wc-gateway-nmi.php:545
 #, php-format
 msgid "Gateway Error: %s"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:547
+#: includes/class-wc-gateway-nmi.php:548
 #, php-format
 msgid ""
 "NMI failure reason: %s \n"
@@ -434,111 +434,111 @@ msgid ""
 "CVV2 Response: %s"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:611 includes/class-wc-gateway-nmi.php:623
+#: includes/class-wc-gateway-nmi.php:612 includes/class-wc-gateway-nmi.php:624
 msgid "There was an error with the gateway response."
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:618
+#: includes/class-wc-gateway-nmi.php:619
 #, php-format
 msgid "Unrecognized response from the gateway: %s"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:628
+#: includes/class-wc-gateway-nmi.php:629
 msgid "Your card has been declined."
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:682
+#: includes/class-wc-gateway-nmi.php:683
 #, php-format
 msgid "Refunded %s - Refund ID: %s - Reason: %s"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:788 includes/class-wc-gateway-nmi.php:789
+#: includes/class-wc-gateway-nmi.php:790 includes/class-wc-gateway-nmi.php:791
 msgid "Address match only"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:790 includes/class-wc-gateway-nmi.php:797
+#: includes/class-wc-gateway-nmi.php:792 includes/class-wc-gateway-nmi.php:799
 msgid "No address or ZIP match only"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:791 includes/class-wc-gateway-nmi.php:796
-#: includes/class-wc-gateway-nmi.php:805
+#: includes/class-wc-gateway-nmi.php:793 includes/class-wc-gateway-nmi.php:798
+#: includes/class-wc-gateway-nmi.php:807
 msgid "Exact match, 5-character numeric ZIP"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:792
+#: includes/class-wc-gateway-nmi.php:794
 msgid "Not a mail/phone order"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:793 includes/class-wc-gateway-nmi.php:794
+#: includes/class-wc-gateway-nmi.php:795 includes/class-wc-gateway-nmi.php:796
 msgid "Non-U.S. issuer does not participate"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:795 includes/class-wc-gateway-nmi.php:799
-#: includes/class-wc-gateway-nmi.php:806
+#: includes/class-wc-gateway-nmi.php:797 includes/class-wc-gateway-nmi.php:801
+#: includes/class-wc-gateway-nmi.php:808
 msgid "5-character ZIP match only"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:798
+#: includes/class-wc-gateway-nmi.php:800
 msgid "AVS not available"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:800
+#: includes/class-wc-gateway-nmi.php:802
 msgid "Issuer system unavailable"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:801
+#: includes/class-wc-gateway-nmi.php:803
 msgid "Service not supported"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:802
+#: includes/class-wc-gateway-nmi.php:804
 msgid "Address unavailable"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:803
+#: includes/class-wc-gateway-nmi.php:805
 msgid "9-character numeric ZIP match only"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:804
+#: includes/class-wc-gateway-nmi.php:806
 msgid "Exact match, 9-character numeric ZIP"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:807
+#: includes/class-wc-gateway-nmi.php:809
 msgid "AVS not availabley"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:808 includes/class-wc-gateway-nmi.php:812
+#: includes/class-wc-gateway-nmi.php:810 includes/class-wc-gateway-nmi.php:814
 msgid "5-character ZIP, customer name match only"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:809 includes/class-wc-gateway-nmi.php:813
+#: includes/class-wc-gateway-nmi.php:811 includes/class-wc-gateway-nmi.php:815
 msgid "Exact match, 5-character numeric ZIP, customer name"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:810 includes/class-wc-gateway-nmi.php:814
+#: includes/class-wc-gateway-nmi.php:812 includes/class-wc-gateway-nmi.php:816
 msgid "Address, customer name match only"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:811 includes/class-wc-gateway-nmi.php:815
+#: includes/class-wc-gateway-nmi.php:813 includes/class-wc-gateway-nmi.php:817
 msgid "No address or ZIP or customer name match only"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:834
+#: includes/class-wc-gateway-nmi.php:836
 msgid "CVV2/CVC2 Match"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:835
+#: includes/class-wc-gateway-nmi.php:837
 msgid "CVV2 / CVC2 No Match"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:836
+#: includes/class-wc-gateway-nmi.php:838
 msgid "Not Processed"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:837
+#: includes/class-wc-gateway-nmi.php:839
 msgid "Merchant Has Indicated that CVV2 / CVC2 is not present on card"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:838
+#: includes/class-wc-gateway-nmi.php:840
 msgid "Issuer is not certified and/or has not provided visa encryption keys"
 msgstr ""
 

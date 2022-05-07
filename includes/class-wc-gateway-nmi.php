@@ -739,12 +739,13 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		);
 
 		foreach( $card_types as $type ) {
-			$card_type = $type['name'];
 			$compare = $type[$field];
 			if ( ( $field == 'pattern' && preg_match( $compare, $value, $match ) ) || $compare == $value ) {
 				return $type[$return];
 			}
 		}
+
+		return false;
 
 	}
 
@@ -851,7 +852,6 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	 *
 	 * @since 2.6.10
 	 *
-	 * @param string $context
 	 * @param string $message
 	 */
 	public function log( $message ) {

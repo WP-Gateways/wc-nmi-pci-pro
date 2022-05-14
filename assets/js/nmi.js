@@ -14,10 +14,15 @@ jQuery( function( $ ) {
 		 */
 		createElements: function() {
 
+			var customCss = ! $('#cfw-payment-method').length ? {} : {
+                "height": "30px"
+            }
+
             CollectJS.configure({
                 //"paymentSelector" : "#place_order",
                 "variant" : "inline",
                 "styleSniffer" : "true",
+				"customCss" : customCss,
                 //"googleFont": "Montserrat:400",
                 "fields": {
                     "ccnumber": {
@@ -114,6 +119,15 @@ jQuery( function( $ ) {
                 wc_nmi_form.block();
                 wc_nmi_form.createElements();
             }
+
+		    // CheckoutWC
+            $( 'body' ).on( 'click', 'a[href="#cfw-payment-method"], a[data-tab="#cfw-payment-method"]', function() {
+                // Don't re-mount if already mounted in DOM.
+                if ( wc_nmi_form.isNMIChosen() || wc_nmi_form.isNMIeCheckChosen() ) {
+                    wc_nmi_form.block();
+                    wc_nmi_form.createElements();
+                }
+            } );
 
             /**
 			 * Only in checkout page we need to delay the mounting of the

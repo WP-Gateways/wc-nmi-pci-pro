@@ -64,6 +64,7 @@ A valid SSL certificate is required to ensure your customer credit card details 
 * Added AVS and CVV responses to order notes
 * Capture or void payment if the order is authorized regardless of whether it was changed from on-hold or not
 * Saved "authcode" from transaction response to order meta
+* Made compatible with CheckoutWC plugin
 * Updated "WC tested up to" header to 6.5
 * Updated compatibility info to WordPress 5.9
 * General code clean up

@@ -123,7 +123,7 @@ jQuery( function( $ ) {
 		    // CheckoutWC
             $( 'body' ).on( 'click', 'a[href="#cfw-payment-method"], a[data-tab="#cfw-payment-method"]', function() {
                 // Don't re-mount if already mounted in DOM.
-                if ( wc_nmi_form.isNMIChosen() || wc_nmi_form.isNMIeCheckChosen() ) {
+                if ( wc_nmi_form.isNMIChosen() ) {
                     wc_nmi_form.block();
                     wc_nmi_form.createElements();
                 }

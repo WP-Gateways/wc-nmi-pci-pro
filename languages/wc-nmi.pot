@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: WP NMI Gateway PCI for WooCommerce\n"
-"POT-Creation-Date: 2022-05-07 19:41+0530\n"
-"PO-Revision-Date: 2022-05-07 19:41+0530\n"
+"POT-Creation-Date: 2022-05-28 20:10+0530\n"
+"PO-Revision-Date: 2022-05-28 20:10+0530\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -399,24 +399,14 @@ msgstr ""
 
 #: includes/class-wc-gateway-nmi.php:508
 #, php-format
-msgid ""
-"NMI charge complete (Charge ID: %s) \n"
-"\n"
-"AVS Response: %s \n"
-"\n"
-"CVV2 Response: %s"
+msgid "NMI charge complete (Charge ID: %s) %s %s"
 msgstr ""
 
 #: includes/class-wc-gateway-nmi.php:522
 #, php-format
 msgid ""
 "NMI charge authorized (Charge ID: %s). Process order to take payment, or "
-"cancel to remove the pre-authorization.\n"
-"\n"
-"AVS Response: %s \n"
-"\n"
-"CVV2 Response: %s \n"
-"\n"
+"cancel to remove the pre-authorization. %s %s"
 msgstr ""
 
 #: includes/class-wc-gateway-nmi.php:544 includes/class-wc-gateway-nmi.php:545
@@ -426,12 +416,7 @@ msgstr ""
 
 #: includes/class-wc-gateway-nmi.php:548
 #, php-format
-msgid ""
-"NMI failure reason: %s \n"
-"\n"
-"AVS Response: %s \n"
-"\n"
-"CVV2 Response: %s"
+msgid "NMI failure reason: %s %s %s"
 msgstr ""
 
 #: includes/class-wc-gateway-nmi.php:612 includes/class-wc-gateway-nmi.php:624

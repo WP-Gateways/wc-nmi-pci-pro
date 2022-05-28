@@ -505,7 +505,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 					$order->payment_complete( $response['transactionid'] );
 
 					// Add order note
-					$complete_message = sprintf( __( "NMI charge complete (Charge ID: %s) \n\nAVS Response: %s \n\nCVV2 Response: %s", 'wc-nmi' ), $response['transactionid'], self::get_avs_message( $response['avsresponse'] ), self::get_cvv_message( $response['cvvresponse'] ) );
+					$complete_message = trim( sprintf( __( "NMI charge complete (Charge ID: %s) %s %s", 'wc-nmi' ), $response['transactionid'], self::get_avs_message( $response['avsresponse'] ), self::get_cvv_message( $response['cvvresponse'] ) ) );
 					$order->add_order_note( $complete_message );
 					$this->log( "Success: $complete_message" );
 
@@ -519,8 +519,8 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 					}
 
 					// Mark as on-hold
-					$authorized_message = sprintf( __( "NMI charge authorized (Charge ID: %s). Process order to take payment, or cancel to remove the pre-authorization.\n\nAVS Response: %s \n\nCVV2 Response: %s \n\n", 'wc-nmi' ), $response['transactionid'], self::get_avs_message( $response['avsresponse'] ), self::get_cvv_message( $response['cvvresponse'] ) );
-					$order->update_status( 'on-hold', $authorized_message );
+					$authorized_message = trim( sprintf( __( "NMI charge authorized (Charge ID: %s). Process order to take payment, or cancel to remove the pre-authorization. %s %s", 'wc-nmi' ), $response['transactionid'], self::get_avs_message( $response['avsresponse'] ), self::get_cvv_message( $response['cvvresponse'] ) ) );
+					$order->update_status( 'on-hold', $authorized_message . "\n" );
 					$this->log( "Success: $authorized_message" );
 
 				}
@@ -545,7 +545,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			$this->log( sprintf( __( 'Gateway Error: %s', 'wc-nmi' ), $e->getMessage() ) );
 
 			if( is_wp_error( $response ) && $response = $response->get_error_data() ) {
-				$order->add_order_note( sprintf( __( "NMI failure reason: %s \n\nAVS Response: %s \n\nCVV2 Response: %s", 'wc-nmi' ), $response['response_code'] . ' - ' . $response['responsetext'], self::get_avs_message( $response['avsresponse'] ), self::get_cvv_message( $response['cvvresponse'] ) ) );
+				$order->add_order_note( trim( sprintf( __( "NMI failure reason: %s %s %s", 'wc-nmi' ), $response['response_code'] . ' - ' . $response['responsetext'], self::get_avs_message( $response['avsresponse'] ), self::get_cvv_message( $response['cvvresponse'] ) ) ) );
             }
 
 			do_action( 'wc_gateway_nmi_process_payment_error', $e, $order );
@@ -818,7 +818,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		);
 
 		if ( array_key_exists( $code, $avs_messages ) ) {
-			return $code . ' - ' . $avs_messages[$code];
+			return "\n" . sprintf( 'AVS Response: %s', $code . ' - ' . $avs_messages[$code] );
 		} else {
 			return '';
 		}
@@ -841,7 +841,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		);
 
 		if ( array_key_exists( $code, $cvv_messages ) ) {
-			return $code . ' - ' . $cvv_messages[$code];
+			return "\n" . sprintf( 'CVV2 Response: %s', $code . ' - ' . $cvv_messages[$code] );
 		} else {
 			return '';
 		}

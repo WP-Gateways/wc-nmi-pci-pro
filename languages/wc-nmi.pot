@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 "Project-Id-Version: WP NMI Gateway PCI for WooCommerce\n"
-"POT-Creation-Date: 2022-05-28 20:10+0530\n"
-"PO-Revision-Date: 2022-05-28 20:10+0530\n"
+"POT-Creation-Date: 2022-06-11 20:01+0530\n"
+"PO-Revision-Date: 2022-06-11 20:01+0530\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -54,7 +54,7 @@ msgstr ""
 msgid "Unable to capture charge!"
 msgstr ""
 
-#: gateway.php:269
+#: gateway.php:269 includes/class-wc-gateway-nmi.php:508
 #, php-format
 msgid "NMI charge complete (Charge ID: %s)"
 msgstr ""
@@ -397,16 +397,11 @@ msgstr ""
 msgid "%s - Order %s"
 msgstr ""
 
-#: includes/class-wc-gateway-nmi.php:508
-#, php-format
-msgid "NMI charge complete (Charge ID: %s) %s %s"
-msgstr ""
-
 #: includes/class-wc-gateway-nmi.php:522
 #, php-format
 msgid ""
 "NMI charge authorized (Charge ID: %s). Process order to take payment, or "
-"cancel to remove the pre-authorization. %s %s"
+"cancel to remove the pre-authorization."
 msgstr ""
 
 #: includes/class-wc-gateway-nmi.php:544 includes/class-wc-gateway-nmi.php:545
@@ -416,7 +411,7 @@ msgstr ""
 
 #: includes/class-wc-gateway-nmi.php:548
 #, php-format
-msgid "NMI failure reason: %s %s %s"
+msgid "NMI failure reason: %s"
 msgstr ""
 
 #: includes/class-wc-gateway-nmi.php:612 includes/class-wc-gateway-nmi.php:624
@@ -435,96 +430,6 @@ msgstr ""
 #: includes/class-wc-gateway-nmi.php:683
 #, php-format
 msgid "Refunded %s - Refund ID: %s - Reason: %s"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:790 includes/class-wc-gateway-nmi.php:791
-msgid "Address match only"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:792 includes/class-wc-gateway-nmi.php:799
-msgid "No address or ZIP match only"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:793 includes/class-wc-gateway-nmi.php:798
-#: includes/class-wc-gateway-nmi.php:807
-msgid "Exact match, 5-character numeric ZIP"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:794
-msgid "Not a mail/phone order"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:795 includes/class-wc-gateway-nmi.php:796
-msgid "Non-U.S. issuer does not participate"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:797 includes/class-wc-gateway-nmi.php:801
-#: includes/class-wc-gateway-nmi.php:808
-msgid "5-character ZIP match only"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:800
-msgid "AVS not available"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:802
-msgid "Issuer system unavailable"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:803
-msgid "Service not supported"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:804
-msgid "Address unavailable"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:805
-msgid "9-character numeric ZIP match only"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:806
-msgid "Exact match, 9-character numeric ZIP"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:809
-msgid "AVS not availabley"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:810 includes/class-wc-gateway-nmi.php:814
-msgid "5-character ZIP, customer name match only"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:811 includes/class-wc-gateway-nmi.php:815
-msgid "Exact match, 5-character numeric ZIP, customer name"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:812 includes/class-wc-gateway-nmi.php:816
-msgid "Address, customer name match only"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:813 includes/class-wc-gateway-nmi.php:817
-msgid "No address or ZIP or customer name match only"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:836
-msgid "CVV2/CVC2 Match"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:837
-msgid "CVV2 / CVC2 No Match"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:838
-msgid "Not Processed"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:839
-msgid "Merchant Has Indicated that CVV2 / CVC2 is not present on card"
-msgstr ""
-
-#: includes/class-wc-gateway-nmi.php:840
-msgid "Issuer is not certified and/or has not provided visa encryption keys"
 msgstr ""
 
 #: includes/class-wc-nmi-privacy.php:13

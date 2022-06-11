@@ -505,7 +505,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 					$order->payment_complete( $response['transactionid'] );
 
 					// Add order note
-					$complete_message = trim( sprintf( __( "NMI charge complete (Charge ID: %s) %s %s", 'wc-nmi' ), $response['transactionid'], self::get_avs_message( $response['avsresponse'] ), self::get_cvv_message( $response['cvvresponse'] ) ) );
+					$complete_message = sprintf( __( 'NMI charge complete (Charge ID: %s)', 'wc-nmi' ), $response['transactionid'] );
 					$order->add_order_note( $complete_message );
 					$this->log( "Success: $complete_message" );
 
@@ -519,7 +519,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 					}
 
 					// Mark as on-hold
-					$authorized_message = trim( sprintf( __( "NMI charge authorized (Charge ID: %s). Process order to take payment, or cancel to remove the pre-authorization. %s %s", 'wc-nmi' ), $response['transactionid'], self::get_avs_message( $response['avsresponse'] ), self::get_cvv_message( $response['cvvresponse'] ) ) );
+					$authorized_message = sprintf( __( 'NMI charge authorized (Charge ID: %s). Process order to take payment, or cancel to remove the pre-authorization.', 'wc-nmi' ), $response['transactionid'] );
 					$order->update_status( 'on-hold', $authorized_message . "\n" );
 					$this->log( "Success: $authorized_message" );
 
@@ -545,7 +545,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			$this->log( sprintf( __( 'Gateway Error: %s', 'wc-nmi' ), $e->getMessage() ) );
 
 			if( is_wp_error( $response ) && $response = $response->get_error_data() ) {
-				$order->add_order_note( trim( sprintf( __( "NMI failure reason: %s %s %s", 'wc-nmi' ), $response['response_code'] . ' - ' . $response['responsetext'], self::get_avs_message( $response['avsresponse'] ), self::get_cvv_message( $response['cvvresponse'] ) ) ) );
+				$order->add_order_note( sprintf( __( 'NMI failure reason: %s', 'wc-nmi' ), $response['response_code'] . ' - ' . $response['responsetext'] ) );
             }
 
 			do_action( 'wc_gateway_nmi_process_payment_error', $e, $order );
@@ -776,75 +776,6 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	public function get_checkout_pay_page_order_id() {
 		global $wp;
 		return isset( $wp->query_vars['order-pay'] ) ? absint( $wp->query_vars['order-pay'] ) : 0;
-	}
-
-	/**
-	 * get_avs_message function.
-	 *
-	 * @access public
-	 * @param string $code
-	 * @return string
-	 */
-	public function get_avs_message( $code ) {
-		$avs_messages = array(
-			'A' => __( 'Address match only', 'wc-nmi' ),
-			'B' => __( 'Address match only', 'wc-nmi' ),
-			'C' => __( 'No address or ZIP match only', 'wc-nmi' ),
-			'D' => __( 'Exact match, 5-character numeric ZIP', 'wc-nmi' ),
-			'E' => __( 'Not a mail/phone order', 'wc-nmi' ),
-			'G' => __( 'Non-U.S. issuer does not participate', 'wc-nmi' ),
-			'I' => __( 'Non-U.S. issuer does not participate', 'wc-nmi' ),
-			'L' => __( '5-character ZIP match only', 'wc-nmi' ),
-			'M' => __( 'Exact match, 5-character numeric ZIP', 'wc-nmi' ),
-			'N' => __( 'No address or ZIP match only', 'wc-nmi' ),
-			'O' => __( 'AVS not available', 'wc-nmi' ),
-			'P' => __( '5-character ZIP match only', 'wc-nmi' ),
-			'R' => __( 'Issuer system unavailable', 'wc-nmi' ),
-			'S' => __( 'Service not supported', 'wc-nmi' ),
-			'U' => __( 'Address unavailable', 'wc-nmi' ),
-			'W' => __( '9-character numeric ZIP match only', 'wc-nmi' ),
-			'X' => __( 'Exact match, 9-character numeric ZIP', 'wc-nmi' ),
-			'Y' => __( 'Exact match, 5-character numeric ZIP', 'wc-nmi' ),
-			'Z' => __( '5-character ZIP match only', 'wc-nmi' ),
-			'0' => __( 'AVS not availabley', 'wc-nmi' ),
-			'1' => __( '5-character ZIP, customer name match only', 'wc-nmi' ),
-			'2' => __( 'Exact match, 5-character numeric ZIP, customer name', 'wc-nmi' ),
-			'3' => __( 'Address, customer name match only', 'wc-nmi' ),
-			'4' => __( 'No address or ZIP or customer name match only', 'wc-nmi' ),
-			'5' => __( '5-character ZIP, customer name match only', 'wc-nmi' ),
-			'6' => __( 'Exact match, 5-character numeric ZIP, customer name', 'wc-nmi' ),
-			'7' => __( 'Address, customer name match only', 'wc-nmi' ),
-			'8' => __( 'No address or ZIP or customer name match only', 'wc-nmi' ),
-		);
-
-		if ( array_key_exists( $code, $avs_messages ) ) {
-			return "\n" . sprintf( 'AVS Response: %s', $code . ' - ' . $avs_messages[$code] );
-		} else {
-			return '';
-		}
-	}
-
-	/**
-	 * get_cvv_message function.
-	 *
-	 * @access public
-	 * @param string $code
-	 * @return string
-	 */
-	public function get_cvv_message( $code ) {
-		$cvv_messages = array(
-			'M' => __( 'CVV2/CVC2 Match', 'wc-nmi' ),
-			'N' => __( 'CVV2 / CVC2 No Match', 'wc-nmi' ),
-			'P' => __( 'Not Processed', 'wc-nmi' ),
-			'S' => __( 'Merchant Has Indicated that CVV2 / CVC2 is not present on card', 'wc-nmi' ),
-			'U' => __( 'Issuer is not certified and/or has not provided visa encryption keys', 'wc-nmi' ),
-		);
-
-		if ( array_key_exists( $code, $cvv_messages ) ) {
-			return "\n" . sprintf( 'CVV2 Response: %s', $code . ' - ' . $cvv_messages[$code] );
-		} else {
-			return '';
-		}
 	}
 
 	/**

@@ -61,7 +61,6 @@ A valid SSL certificate is required to ensure your customer credit card details 
 == Changelog ==
 
 = 1.1.0 =
-* Added AVS and CVV responses to order notes
 * Capture or void payment if the order is authorized regardless of whether it was changed from on-hold or not
 * Saved "authcode" from transaction response to order meta
 * Made compatible with CheckoutWC plugin

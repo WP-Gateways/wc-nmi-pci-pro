@@ -3,13 +3,13 @@
 Plugin Name: WP NMI Gateway PCI for WooCommerce
 Plugin URI: https://bitbucket.org/pledged/wc-nmi-pci-pro
 Description: A PCI compliant payment gateway for NMI. An NMI account and a server with cURL, SSL support, and a valid SSL certificate is required (for security reasons) for this gateway to function. Requires WC 3.3+
-Version: 1.1.0
+Version: 1.1.1
 Author: Pledged Plugins
 Author URI: https://pledgedplugins.com
 Text Domain: wc-nmi
 Domain Path: /languages
 WC requires at least: 3.3
-WC tested up to: 6.6
+WC tested up to: 7.0
 
 	Copyright: © Pledged Plugins.
 	License: GNU General Public License v3.0
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WC_NMI_PCI_VERSION', '1.1.0' );
+define( 'WC_NMI_PCI_VERSION', '1.1.1' );
 define( 'WC_NMI_PCI_TEMPLATE_PATH', untrailingslashit( plugin_dir_path( __FILE__ ) ) . '/templates/' );
 define( 'WC_NMI_PCI_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path( __FILE__ ) ), basename( __FILE__ ) ) ) );
 define( 'WC_NMI_PCI_MAIN_FILE', __FILE__ );
@@ -238,13 +238,13 @@ class WC_NMI_PCI {
 		$order = wc_get_order( $order_id );
 		$gateway = new WC_Gateway_NMI();
 
-		$gateway->log( "Info: Beginning capture payment for order $order_id for the amount of {$order->get_total()}" );
-
 		if ( $order->get_payment_method() == 'nmi' ) {
 			$charge   = $order->get_meta( '_nmi_charge_id' );
 			$captured = $order->get_meta( '_nmi_charge_captured' );
 
 			if ( $charge && $captured == 'no' ) {
+
+				$gateway->log( "Info: Beginning capture payment for order $order_id for the amount of {$order->get_total()}" );
 
 				$order_total = $order->get_total();
 
@@ -274,6 +274,7 @@ class WC_NMI_PCI {
 					$order->set_transaction_id( $response['transactionid'] );
 					$order->save();
 				}
+
 			}
 		}
 	}
@@ -287,12 +288,13 @@ class WC_NMI_PCI {
 		$order = wc_get_order( $order_id );
 		$gateway = new WC_Gateway_NMI();
 
-		$gateway->log( "Info: Beginning cancel payment for order $order_id for the amount of {$order->get_total()}" );
-
 		if ( $order->get_payment_method() == 'nmi' ) {
 			$charge = $order->get_meta( '_nmi_charge_id' );
 
 			if ( $charge ) {
+
+				$gateway->log( "Info: Beginning cancel payment for order $order_id for the amount of {$order->get_total()}" );
+
 				$args = array(
 					'amount'			=> $order->get_total(),
 					'transactionid'		=> $order->get_transaction_id(),
@@ -315,6 +317,7 @@ class WC_NMI_PCI {
 					$order->save();
 				}
 			}
+
 		}
 	}
 

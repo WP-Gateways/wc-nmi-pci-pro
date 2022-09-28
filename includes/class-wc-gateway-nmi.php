@@ -10,6 +10,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
+	public $testmode;
+	public $api_keys;
+	public $capture;
+	public $private_key;
+	public $public_key;
+	public $username;
+	public $password;
+	public $logging;
+	public $debugging;
+	public $line_items;
+	public $allowed_card_types;
+	public $customer_receipt;
+
     const NMI_REQUEST_URL_LOGIN = 'https://secure.networkmerchants.com/api/transact.php';
     const NMI_REQUEST_URL_API_KEYS = 'https://secure.nmi.com/api/transact.php';
 
@@ -18,8 +31,8 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	 */
 	public function __construct() {
 		$this->id                   = 'nmi';
-		$this->method_title         = __( 'Network Merchants (NMI)', 'wc-nmi' );
-		$this->method_description   = __( 'Network Merchants (NMI) works by adding credit card fields on the checkout and then sending the details to the gateway for processing the transactions.', 'wc-nmi' );
+		$this->method_title         = __( 'NMI', 'wc-nmi' );
+		$this->method_description   = __( 'NMI works by adding credit card fields on the checkout and then sending the details to the gateway for processing the transactions.', 'wc-nmi' );
 		$this->has_fields           = true;
 		$this->supports             = array( 'products', 'refunds' );
 
@@ -121,7 +134,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
 		// Show message if enabled and FORCE SSL is disabled and WordpressHTTPS plugin is not detected
 		if ( ! wc_checkout_is_https() ) {
-			echo '<div class="notice notice-warning"><p>' . sprintf( __( 'Network Merchants (NMI) is enabled, but a SSL certificate is not detected. Your checkout may not be secure! Please ensure your server has a valid <a href="%1$s" target="_blank">SSL certificate</a>', 'wc-nmi' ), 'https://en.wikipedia.org/wiki/Transport_Layer_Security' ) . '</p></div>';
+			echo '<div class="notice notice-warning"><p>' . sprintf( __( 'NMI is enabled, but a SSL certificate is not detected. Your checkout may not be secure! Please ensure your server has a valid <a href="%1$s" target="_blank">SSL certificate</a>', 'wc-nmi' ), 'https://en.wikipedia.org/wiki/Transport_Layer_Security' ) . '</p></div>';
  		}
 
 	}
@@ -135,7 +148,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
                 /**
                  * Object to handle NMI admin functions.
                  */
-                var wc_nmi_admin = {
+                let wc_nmi_admin = {
                     isAPIKey: function() {
                         return $( '#woocommerce_nmi_api_keys' ).is( ':checked' );
                     },
@@ -145,7 +158,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
                      */
                     init: function() {
                         $( document.body ).on( 'change', '#woocommerce_nmi_api_keys', function() {
-                           var field_username = $( '#woocommerce_nmi_username' ).parents( 'tr' ).eq( 0 ),
+                           let field_username = $( '#woocommerce_nmi_username' ).parents( 'tr' ).eq( 0 ),
 					           field_password = $( '#woocommerce_nmi_password' ).parents( 'tr' ).eq( 0 ),
 					           field_private_key = $( '#woocommerce_nmi_private_key' ).parents( 'tr' ).eq( 0 ),
 					           field_public_key = $( '#woocommerce_nmi_public_key' ).parents( 'tr' ).eq( 0 );
@@ -239,7 +252,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 				'default'     => ''
 			),
             'public_key' => array(
-				'title'       => __( 'Public Key', 'wc-nmi' ),
+				'title'       => __( 'Public Tokenization Key', 'wc-nmi' ),
 				'type'        => 'text',
 				'description' => __( 'Used for Collect.js tokenization for PCI compliance. Leave it empty ONLY if you are facing Javascript issues at checkout and the plugin will default to Direct Post method.', 'wc-nmi' ),
 				'default'     => ''
@@ -334,6 +347,9 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		<fieldset id="wc-<?php echo esc_attr( $this->id ); ?>-cc-form" class="wc-credit-card-form wc-payment-form" style="background:transparent;">
 			<?php do_action( 'woocommerce_credit_card_form_start', $this->id ); ?>
 
+			<!-- Used to display form errors -->
+            <div class="nmi-source-errors" role="alert"></div>
+
             <div class="form-row form-row-wide">
                 <label for="nmi-card-number-element"><?php esc_html_e( 'Card Number', 'wc-nmi' ); ?> <span class="required">*</span></label>
                 <div class="nmi-card-group">
@@ -361,9 +377,6 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
             </div>
             <div class="clear"></div>
 
-			<!-- Used to display form errors -->
-			<div class="nmi-source-errors" role="alert"></div>
-			<br />
 			<?php do_action( 'woocommerce_credit_card_form_end', $this->id ); ?>
 			<div class="clear"></div>
 		</fieldset>
@@ -418,7 +431,6 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	public function process_payment( $order_id, $retry = true ) {
 
         $order		= wc_get_order( $order_id );
-        $token_id 	= isset( $_POST['wc-nmi-payment-token'] ) ? wc_clean( $_POST['wc-nmi-payment-token'] ) : '';
 
 		$this->log( "Info: Beginning processing payment for order $order_id for the amount of {$order->get_total()}" );
 

@@ -61,9 +61,11 @@ A valid SSL certificate is required to ensure your customer credit card details 
 == Changelog ==
 
 = 1.1.1 =
-* Fixed PHP notices
+* Made compatible with Avada Checkout
+* Made compatible with Woolentor plugin
 * Added minor improvements in code base
 * Updated "WC tested up to" header to 7.0
+* Fixed PHP notices
 
 = 1.1.0 =
 * Capture or void payment if the order is authorized regardless of whether it was changed from on-hold or not

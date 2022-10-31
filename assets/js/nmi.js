@@ -120,8 +120,8 @@ jQuery( function( $ ) {
                 wc_nmi_form.createElements();
             }
 
-		    // CheckoutWC
-            $( 'body' ).on( 'click', 'a[href="#cfw-payment-method"], a[data-tab="#cfw-payment-method"]', function() {
+		    // CheckoutWC and woolentor
+			$( 'body' ).on( 'click', 'a[href="#cfw-payment-method"], a[data-tab="#cfw-payment-method"], a[data-step="step--payment"]', function() {
                 // Don't re-mount if already mounted in DOM.
                 if ( wc_nmi_form.isNMIChosen() ) {
                     wc_nmi_form.block();

@@ -1,4 +1,5 @@
 <?php
+
 if ( ! class_exists( 'WC_Abstract_Privacy' ) ) {
 	return;
 }
@@ -8,10 +9,10 @@ class WC_NMI_Privacy extends WC_Abstract_Privacy {
 	 * Constructor
 	 */
 	public function __construct() {
-		parent::__construct( __( 'Network Merchants (NMI)', 'wc-nmi' ) );
+		parent::__construct( __( 'NMI', 'wc-nmi' ) );
 
-		$this->add_exporter( 'wc-nmi-order-data', __( 'WooCommerce Network Merchants (NMI) Order Data', 'wc-nmi' ), array( $this, 'order_data_exporter' ) );
-		$this->add_eraser( 'wc-nmi-order-data', __( 'WooCommerce Network Merchants (NMI) Data', 'wc-nmi' ), array( $this, 'order_data_eraser' ) );
+		$this->add_exporter( 'wc-nmi-order-data', __( 'WooCommerce NMI Order Data', 'wc-nmi' ), array( $this, 'order_data_exporter' ) );
+		$this->add_eraser( 'wc-nmi-order-data', __( 'WooCommerce NMI Data', 'wc-nmi' ), array( $this, 'order_data_eraser' ) );
 
 		add_filter( 'woocommerce_get_settings_account', array( $this, 'account_settings' ) );
 	}
@@ -25,8 +26,8 @@ class WC_NMI_Privacy extends WC_Abstract_Privacy {
 	public function account_settings( $settings ) {
 		$insert_setting = array(
 			array(
-				'title'       => __( 'Retain Network Merchants (NMI) Data', 'wc-nmi' ),
-				'desc_tip'    => __( 'Retains Network Merchants (NMI) data such as Network Merchants (NMI) customer ID, charge ID.', 'wc-nmi' ),
+				'title'       => __( 'Retain NMI Data', 'wc-nmi' ),
+				'desc_tip'    => __( 'Retains NMI data such as NMI customer ID, charge ID.', 'wc-nmi' ),
 				'id'          => 'woocommerce_gateway_nmi_retention',
 				'type'        => 'relative_date_selector',
 				'placeholder' => __( 'N/A', 'wc-nmi' ),
@@ -98,7 +99,7 @@ class WC_NMI_Privacy extends WC_Abstract_Privacy {
 					'item_id'     => 'order-' . $order->get_id(),
 					'data'        => array(
 						array(
-							'name'  => __( 'Network Merchants (NMI) payment id', 'wc-nmi' ),
+							'name'  => __( 'NMI payment id', 'wc-nmi' ),
 							'value' => $order->get_meta( '_nmi_charge_id' ),
 						),
 					),
@@ -159,7 +160,7 @@ class WC_NMI_Privacy extends WC_Abstract_Privacy {
 		$nmi_charge_id = $order->get_meta( '_nmi_charge_id' );
 
 		if ( ! $this->is_retention_expired( $order->get_date_created()->getTimestamp() ) ) {
-			return array( false, true, array( sprintf( __( 'Order ID %d is less than set retention days. Personal data retained. (Network Merchants (NMI))', 'wc-nmi' ), $order->get_id() ) ) );
+			return array( false, true, array( sprintf( __( 'Order ID %d is less than set retention days. Personal data retained. (NMI)', 'wc-nmi' ), $order->get_id() ) ) );
 		}
 
 		if ( empty( $nmi_charge_id ) ) {
@@ -169,7 +170,7 @@ class WC_NMI_Privacy extends WC_Abstract_Privacy {
 		$order->delete_meta_data( '_nmi_charge_id' );
 		$order->save();
 
-		return array( true, false, array( __( 'Network Merchants (NMI) personal data erased.', 'wc-nmi' ) ) );
+		return array( true, false, array( __( 'NMI personal data erased.', 'wc-nmi' ) ) );
 	}
 
 	/**

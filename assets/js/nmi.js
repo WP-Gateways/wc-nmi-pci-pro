@@ -1,21 +1,21 @@
 jQuery( function( $ ) {
 	'use strict';
 
-    var nmi_error = {},
+    let nmi_error = {},
         card_allowed;
 
 	/**
 	 * Object to handle NMI payment forms.
 	 */
-	var wc_nmi_form = {
+	let wc_nmi_form = {
 
         /**
 		 * Creates all NMI elements that will be used to enter cards or IBANs.
 		 */
 		createElements: function() {
 
-			var customCss = ! $('#cfw-payment-method').length ? {} : {
-                "height": "30px"
+			const customCss = ! ( $('#cfw-payment-method').length || $('.woolentor-step--payment').length || $('.avada-checkout').length ) ? {} : {
+				"height": "30px"
             }
 
             CollectJS.configure({
@@ -41,7 +41,7 @@ jQuery( function( $ ) {
                 },
                 'validationCallback' : function(field, status, message) {
                     if (status) {
-                        var message = field + " is OK: " + message;
+                        message = field + " is OK: " + message;
                         nmi_error[field] = '';
                     } else {
                         nmi_error[field] = message;
@@ -120,8 +120,8 @@ jQuery( function( $ ) {
                 wc_nmi_form.createElements();
             }
 
-		    // CheckoutWC
-            $( 'body' ).on( 'click', 'a[href="#cfw-payment-method"], a[data-tab="#cfw-payment-method"]', function() {
+		    // CheckoutWC and woolentor
+			$( 'body' ).on( 'click', 'a[href="#cfw-payment-method"], a[data-tab="#cfw-payment-method"], a[data-step="step--payment"]', function() {
                 // Don't re-mount if already mounted in DOM.
                 if ( wc_nmi_form.isNMIChosen() ) {
                     wc_nmi_form.block();
@@ -190,14 +190,14 @@ jQuery( function( $ ) {
 
 		onError: function( e, result ) {
 			//console.log(responseObject.response);
-			var message = result;
-			var selectedMethodElement = wc_nmi_form.getSelectedPaymentElement().closest( 'li' );
-			var savedTokens = selectedMethodElement.find( '.woocommerce-SavedPaymentMethods-tokenInput' );
-			var errorContainer;
+			let message = result;
+			let selectedMethodElement = wc_nmi_form.getSelectedPaymentElement().closest( 'li' );
+			let savedTokens = selectedMethodElement.find( '.woocommerce-SavedPaymentMethods-tokenInput' );
+			let errorContainer;
 
 			if ( savedTokens.length ) {
 				// In case there are saved cards too, display the message next to the correct one.
-				var selectedToken = savedTokens.filter( ':checked' );
+				let selectedToken = savedTokens.filter( ':checked' );
 
 				if ( selectedToken.closest( '.woocommerce-SavedPaymentMethods-new' ).length ) {
 					// Display the error next to the CC fields if a new card is being entered.
@@ -229,13 +229,13 @@ jQuery( function( $ ) {
 			if ( wc_nmi_form.isNMIChosen() && ! wc_nmi_form.hasToken() ) {
 				e.preventDefault();
 				wc_nmi_form.block();
-                var error_message;
+                let error_message;
 
                 console.log(nmi_error);
 
-                var validCardNumber = document.querySelector("#nmi-card-number-element .CollectJSValid") !== null;
-                var validCardExpiry = document.querySelector("#nmi-card-expiry-element .CollectJSValid") !== null;
-                var validCardCvv = document.querySelector("#nmi-card-cvc-element .CollectJSValid") !== null;
+                let validCardNumber = document.querySelector("#nmi-card-number-element .CollectJSValid") !== null;
+                let validCardExpiry = document.querySelector("#nmi-card-expiry-element .CollectJSValid") !== null;
+                let validCardCvv = document.querySelector("#nmi-card-cvc-element .CollectJSValid") !== null;
 
                 if( !validCardNumber ) {
                     error_message = wc_nmi_params.card_number_error + ( nmi_error.ccnumber ? ' ' + wc_nmi_params.error_ref.replace( '[ref]', nmi_error.ccnumber ) : '' );

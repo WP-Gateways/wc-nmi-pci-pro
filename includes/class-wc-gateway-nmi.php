@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * WC_Gateway_NMI class.
  *
- * @extends WC_Payment_Gateway
+ * @extends WC_Payment_Gateway_CC
  */
 class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
@@ -605,7 +605,6 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
         // Setting custom timeout for the HTTP request
 		add_filter( 'http_request_timeout', array( $this, 'http_request_timeout' ), 9999 );
 
-        //$headers = array( 'Content-Type' => 'application/json' );
         $headers = array();
         $response = wp_remote_post( $request_url, array( 'body' => $args , 'headers' => $headers ) );
 

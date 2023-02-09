@@ -9,7 +9,7 @@ Author URI: https://pledgedplugins.com
 Text Domain: wc-nmi
 Domain Path: /languages
 WC requires at least: 3.3
-WC tested up to: 7.3
+WC tested up to: 7.4
 
 	Copyright: © Pledged Plugins.
 	License: GNU General Public License v3.0
@@ -290,17 +290,18 @@ class WC_NMI_PCI {
 
 		if ( $order->get_payment_method() == 'nmi' ) {
 			$charge = $order->get_meta( '_nmi_charge_id' );
+			$captured = $order->get_meta( '_nmi_charge_captured' );
 
-			if ( $charge ) {
+			if ( $charge && $captured == 'no' ) {
 
 				$gateway->log( "Info: Beginning cancel payment for order $order_id for the amount of {$order->get_total()}" );
 
 				$args = array(
-					'amount'			=> $order->get_total(),
-					'transactionid'		=> $order->get_transaction_id(),
-					'type' 				=> 'void',
-					'email' 			=> $order->get_billing_email(),
-					'currency'			=> $gateway->get_payment_currency( $order_id ),
+					'amount'		=> $order->get_total(),
+					'transactionid'	=> $order->get_transaction_id(),
+					'type' 			=> 'void',
+					'email' 		=> $order->get_billing_email(),
+					'currency'		=> $gateway->get_payment_currency( $order_id ),
 				);
 				$args = apply_filters( 'wc_nmi_request_args', $args, $order );
 

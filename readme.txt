@@ -76,7 +76,8 @@ A valid SSL certificate is required to ensure your customer credit card details 
 == Changelog ==
 
 = 1.1.2 =
-* Updated "WC tested up to" header to 7.3
+* Fixed captured payments being voided on cancelling orders
+* Updated "WC tested up to" header to 7.4
 
 = 1.1.1 =
 * Made compatible with Avada Checkout

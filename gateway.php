@@ -9,7 +9,7 @@ Author URI: https://pledgedplugins.com
 Text Domain: wc-nmi
 Domain Path: /languages
 WC requires at least: 3.3
-WC tested up to: 7.4
+WC tested up to: 7.5
 
 	Copyright: © Pledged Plugins.
 	License: GNU General Public License v3.0
@@ -57,6 +57,14 @@ class WC_NMI_PCI {
 	 * Constructor
 	 */
 	public function __construct() {
+
+		// Declaring HPOS feature compatibility
+		add_action( 'before_woocommerce_init', function() {
+			if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+			}
+		} );
+
 		add_action( 'admin_init', array( $this, 'check_environment' ), 11 );
 		add_action( 'admin_notices', array( $this, 'admin_notices' ), 15 );
 		add_action( 'plugins_loaded', array( $this, 'init' ), 11 );

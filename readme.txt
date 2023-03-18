@@ -5,7 +5,7 @@ Tags: nmi, network merchants, payment gateway, woocommerce, pci, pci-dss, tokeni
 Plugin URI: https://bitbucket.org/pledged/wc-nmi-pci-pro
 Author URI: https://pledgedplugins.com
 Requires at least: 4.4
-Tested up to: 6.1
+Tested up to: 6.2
 Requires PHP: 5.6
 Stable tag: 1.1.2
 License: GPLv2 or later
@@ -78,6 +78,7 @@ A valid SSL certificate is required to ensure your customer credit card details 
 = 1.1.2 =
 * Made compatible with WooCommerce HPOS
 * Fixed captured payments being voided on cancelling orders
+* Updated compatibility info to WordPress 6.2
 * Updated "WC tested up to" header to 7.5
 
 = 1.1.1 =

@@ -3,13 +3,13 @@
 Plugin Name: WP NMI Gateway PCI for WooCommerce
 Plugin URI: https://bitbucket.org/pledged/wc-nmi-pci-pro
 Description: A PCI compliant payment gateway for NMI. An NMI account and a server with cURL, SSL support, and a valid SSL certificate is required (for security reasons) for this gateway to function. Requires WC 3.3+
-Version: 1.1.1
+Version: 1.1.2
 Author: Pledged Plugins
 Author URI: https://pledgedplugins.com
 Text Domain: wc-nmi
 Domain Path: /languages
 WC requires at least: 3.3
-WC tested up to: 7.0
+WC tested up to: 7.5
 
 	Copyright: © Pledged Plugins.
 	License: GNU General Public License v3.0
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WC_NMI_PCI_VERSION', '1.1.1' );
+define( 'WC_NMI_PCI_VERSION', '1.1.2' );
 define( 'WC_NMI_PCI_TEMPLATE_PATH', untrailingslashit( plugin_dir_path( __FILE__ ) ) . '/templates/' );
 define( 'WC_NMI_PCI_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path( __FILE__ ) ), basename( __FILE__ ) ) ) );
 define( 'WC_NMI_PCI_MAIN_FILE', __FILE__ );
@@ -57,6 +57,14 @@ class WC_NMI_PCI {
 	 * Constructor
 	 */
 	public function __construct() {
+
+		// Declaring HPOS feature compatibility
+		add_action( 'before_woocommerce_init', function() {
+			if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+			}
+		} );
+
 		add_action( 'admin_init', array( $this, 'check_environment' ), 11 );
 		add_action( 'admin_notices', array( $this, 'admin_notices' ), 15 );
 		add_action( 'plugins_loaded', array( $this, 'init' ), 11 );
@@ -290,17 +298,18 @@ class WC_NMI_PCI {
 
 		if ( $order->get_payment_method() == 'nmi' ) {
 			$charge = $order->get_meta( '_nmi_charge_id' );
+			$captured = $order->get_meta( '_nmi_charge_captured' );
 
-			if ( $charge ) {
+			if ( $charge && $captured == 'no' ) {
 
 				$gateway->log( "Info: Beginning cancel payment for order $order_id for the amount of {$order->get_total()}" );
 
 				$args = array(
-					'amount'			=> $order->get_total(),
-					'transactionid'		=> $order->get_transaction_id(),
-					'type' 				=> 'void',
-					'email' 			=> $order->get_billing_email(),
-					'currency'			=> $gateway->get_payment_currency( $order_id ),
+					'amount'		=> $order->get_total(),
+					'transactionid'	=> $order->get_transaction_id(),
+					'type' 			=> 'void',
+					'email' 		=> $order->get_billing_email(),
+					'currency'		=> $gateway->get_payment_currency( $order_id ),
 				);
 				$args = apply_filters( 'wc_nmi_request_args', $args, $order );
 

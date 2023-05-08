@@ -77,7 +77,7 @@ A valid SSL certificate is required to ensure your customer credit card details 
 
 = 1.1.3 =
 * Made compatible with LaForat theme
-* Updated "WC tested up to" header to 7.6
+* Updated "WC tested up to" header to 7.7
 
 = 1.1.2 =
 * Made compatible with WooCommerce HPOS

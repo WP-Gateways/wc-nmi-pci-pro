@@ -14,7 +14,7 @@ jQuery( function( $ ) {
 		 */
 		createElements: function() {
 
-			const customCss = ! ( $('#cfw-payment-method').length || $('.woolentor-step--payment').length || $('.avada-checkout').length ) ? {} : {
+			const customCss = ! ( $('#cfw-payment-method').length || $('.woolentor-step--payment').length || $('.avada-checkout').length || $('.ro-checkout-process').length ) ? {} : {
 				"height": "30px"
             }
 
@@ -120,8 +120,8 @@ jQuery( function( $ ) {
                 wc_nmi_form.createElements();
             }
 
-		    // CheckoutWC and woolentor
-			$( 'body' ).on( 'click', 'a[href="#cfw-payment-method"], a[data-tab="#cfw-payment-method"], a[data-step="step--payment"]', function() {
+		    // CheckoutWC and woolentor, La Forat theme
+			$( 'body' ).on( 'click', 'a[href="#cfw-payment-method"], a[data-tab="#cfw-payment-method"], a[data-step="step--payment"], a.ro-tab-2, a.ro-btn-2', function() {
                 // Don't re-mount if already mounted in DOM.
                 if ( wc_nmi_form.isNMIChosen() ) {
                     wc_nmi_form.block();

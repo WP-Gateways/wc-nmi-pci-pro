@@ -3,13 +3,13 @@
 Plugin Name: WP NMI Gateway PCI for WooCommerce
 Plugin URI: https://bitbucket.org/pledged/wc-nmi-pci-pro
 Description: A PCI compliant payment gateway for NMI. An NMI account and a server with cURL, SSL support, and a valid SSL certificate is required (for security reasons) for this gateway to function. Requires WC 3.3+
-Version: 1.1.5
+Version: 1.1.6
 Author: Pledged Plugins
 Author URI: https://pledgedplugins.com
 Text Domain: wc-nmi
 Domain Path: /languages
 WC requires at least: 3.3
-WC tested up to: 8.2
+WC tested up to: 8.3
 
 	Copyright: © Pledged Plugins.
 	License: GNU General Public License v3.0
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WC_NMI_PCI_VERSION', '1.1.5' );
+define( 'WC_NMI_PCI_VERSION', '1.1.6' );
 define( 'WC_NMI_PCI_TEMPLATE_PATH', untrailingslashit( plugin_dir_path( __FILE__ ) ) . '/templates/' );
 define( 'WC_NMI_PCI_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path( __FILE__ ) ), basename( __FILE__ ) ) ) );
 define( 'WC_NMI_PCI_MAIN_FILE', __FILE__ );
@@ -58,10 +58,14 @@ class WC_NMI_PCI {
 	 */
 	public function __construct() {
 
-		// Declaring HPOS feature compatibility
 		add_action( 'before_woocommerce_init', function() {
+			// Declaring HPOS feature compatibility
 			if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
 				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+			}
+			// Declaring cart and checkout blocks incompatibility
+			if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__, false );
 			}
 		} );
 

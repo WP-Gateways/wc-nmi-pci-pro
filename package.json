@@ -25,5 +25,18 @@
 		"@woocommerce/eslint-plugin": "^2.2.0",
 		"@wordpress/prettier-config": "^4.0.0",
 		"@wordpress/scripts": "^26.12.0"
-	}
+	},
+	"files": [
+		"/assets",
+		"/build",
+		"/includes",
+		"/languages",
+		"/woo-includes",
+		"/updates",
+		"gateway.php",
+		"block.json",
+		"readme.txt",
+		"readme.md",
+		"README.md"
+	]
 }

@@ -430,7 +430,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
         if( !isset( $_POST['nmi_js_response'] ) ) {
             return false;
         }
-		$response = json_decode( stripslashes( $_POST['nmi_js_response'] ), 1 );
+		$response = json_decode( wc_clean( wp_unslash( $_POST['nmi_js_response'] ) ), 1 );
 		return $response;
 	}
 

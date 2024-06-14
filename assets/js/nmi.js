@@ -18,48 +18,54 @@ jQuery( function( $ ) {
 				"height": "30px"
             }
 
-            CollectJS.configure({
-                //"paymentSelector" : "#place_order",
-                "variant" : "inline",
-                "styleSniffer" : "true",
-				"customCss" : customCss,
-                //"googleFont": "Montserrat:400",
-                "fields": {
-                    "ccnumber": {
-                        "selector": "#nmi-card-number-element",
-                        "placeholder": "•••• •••• •••• ••••"
-                    },
-                    "ccexp": {
-                        "selector": "#nmi-card-expiry-element",
-                        "placeholder": wc_nmi_params.placeholder_expiry
-                    },
-                    "cvv": {
-                        "display": "show",
-                        "selector": "#nmi-card-cvc-element",
-                        "placeholder": wc_nmi_params.placeholder_cvc
-                    }
-                },
-                'validationCallback' : function(field, status, message) {
-                    if (status) {
-                        message = field + " is OK: " + message;
-                        nmi_error[field] = '';
-                    } else {
-                        nmi_error[field] = message;
-                    }
-                    console.log(message);
-                },
-                "timeoutDuration" : 20000,
-                "timeoutCallback" : function () {
-                    $( document ).trigger( 'nmiError', wc_nmi_params.timeout_error );
-                },
-                "fieldsAvailableCallback" : function () {
-                    wc_nmi_form.unblock();
-                    console.log("Collect.js loaded the fields onto the form");
-                },
-                'callback' : function(response) {
-                    wc_nmi_form.onNMIResponse(response);
-                }
-            });
+			if (window.CollectJS !== undefined) {
+
+				CollectJS.configure({
+					//"paymentSelector" : "#place_order",
+					"variant": "inline",
+					"styleSniffer": "true",
+					"customCss": customCss,
+					//"googleFont": "Montserrat:400",
+					"fields": {
+						"ccnumber": {
+							"selector": "#nmi-card-number-element",
+							"placeholder": "•••• •••• •••• ••••"
+						},
+						"ccexp": {
+							"selector": "#nmi-card-expiry-element",
+							"placeholder": wc_nmi_params.placeholder_expiry
+						},
+						"cvv": {
+							"display": "show",
+							"selector": "#nmi-card-cvc-element",
+							"placeholder": wc_nmi_params.placeholder_cvc
+						}
+					},
+					'validationCallback': function (field, status, message) {
+						if (status) {
+							message = field + " is OK: " + message;
+							nmi_error[field] = '';
+						} else {
+							nmi_error[field] = message;
+						}
+						console.log(message);
+					},
+					"timeoutDuration": 20000,
+					"timeoutCallback": function () {
+						$(document).trigger('nmiError', wc_nmi_params.timeout_error);
+					},
+					"fieldsAvailableCallback": function () {
+						wc_nmi_form.unblock();
+						console.log("Collect.js loaded the fields onto the form");
+					},
+					'callback': function (response) {
+						wc_nmi_form.onNMIResponse(response);
+					}
+				});
+			} else {
+				$(document).trigger('nmiError', wc_nmi_params.collect_js_error);
+				$('#wc-nmi-cc-form label, #wc-nmi-cc-form .wc-nmi-elements-field').hide();
+			}
 
         },
 

@@ -33,7 +33,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	public function __construct() {
 		$this->id                   = 'nmi';
 		$this->method_title         = __( 'NMI', 'wc-nmi' );
-		$this->method_description   = __( 'NMI works by adding credit card fields on the checkout and then sending the details to the gateway for processing the transactions.', 'wc-nmi' );
+		$this->method_description = __( 'NMI works by adding credit card fields on the checkout and then sending the details to the gateway for processing the transactions.', 'wc-nmi' ) . '<h3>' . __( 'Upgrade to Enterprise', 'wc-nmi' ) . '</h3>' . sprintf( __( 'Enterprise version is a full blown plugin that provides full support for processing subscriptions, pre-orders, payments via saved cards or eCheck accounts and refunds directly from your website. The credit card or eCheck account information is saved in your gateway merchant account and is reused to charge future orders, recurring payments or pre-orders at a later time. It also has an option to enable 3D Secure 2 card verification and make your site Strong Customer Authentication (SCA) compliant. <br/><br/><a href="%s" target="_blank">Click here</a> to upgrade to Enterprise version or to know more about it.', 'wc-nmi' ), 'https://pledgedplugins.com/products/nmi-payment-gateway-woocommerce/' );
 		$this->has_fields           = true;
 		$this->supports             = array( 'products', 'refunds' );
 
@@ -394,23 +394,31 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		wp_enqueue_script( 'nmi-collect-js', 'https://secure.nmi.com/token/Collect.js', '', null, true );
 		wp_enqueue_script( 'woocommerce_nmi', plugins_url( 'assets/js/nmi.js', WC_NMI_PCI_MAIN_FILE ), array( 'jquery-payment', 'nmi-collect-js' ), WC_NMI_PCI_VERSION, true );
 
+		wp_localize_script( 'woocommerce_nmi', 'wc_nmi_params', apply_filters( 'wc_nmi_params', $this->javascript_params() ) );
+	}
+
+	public function javascript_params() {
 		$nmi_params = array(
 			'public_key'           	=> $this->public_key,
 			'allowed_card_types'   	=> $this->allowed_card_types,
 			'i18n_terms'           	=> __( 'Please accept the terms and conditions first', 'wc-nmi' ),
 			'i18n_required_fields'	=> __( 'Please fill in required checkout fields first', 'wc-nmi' ),
-            'card_disallowed_error' => __( 'Card Type Not Accepted.', 'wc-nmi' ),
-            'placeholder_cvc'	 	=> __( 'CVC', 'woocommerce' ),
-            'placeholder_expiry' 	=> __( 'MM / YY', 'woocommerce' ),
-            'card_number_error' 	=> __( 'Invalid card number.', 'wc-nmi' ),
-            'card_expiry_error' 	=> __( 'Invalid card expiry date.', 'wc-nmi' ),
-            'card_cvc_error' 		=> __( 'Invalid card CVC.', 'wc-nmi' ),
-            'error_ref' 			=> __( '(Ref: [ref])', 'wc-nmi' ),
-            'timeout_error' 		=> __( 'The tokenization did not respond in the expected timeframe. Please make sure the fields are correctly filled in and submit the form again.', 'wc-nmi' ),
+			'no_card_number_error'  => __( 'Enter a card number.', 'wc-nmi' ),
+			'no_card_expiry_error'  => __( 'Enter an expiry date.', 'wc-nmi' ),
+			'no_cvv_error'          => __( 'CVC code is required.', 'wc-nmi' ),
+			'card_number_error' 	=> __( 'Invalid card number.', 'wc-nmi' ),
+			'card_expiry_error' 	=> __( 'Invalid card expiry date.', 'wc-nmi' ),
+			'card_cvc_error' 		=> __( 'Invalid card CVC.', 'wc-nmi' ),
+			'placeholder_cvc'	 	=> __( 'CVC', 'woocommerce' ),
+			'placeholder_expiry' 	=> __( 'MM / YY', 'woocommerce' ),
+			'card_disallowed_error' => __( 'Card Type Not Accepted.', 'wc-nmi' ),
+			'error_ref' 			=> __( '(Ref: [ref])', 'wc-nmi' ),
+			'timeout_error' 		=> __( 'The tokenization did not respond in the expected timeframe. Please make sure the fields are correctly filled in and submit the form again.', 'wc-nmi' ),
+			'collect_js_error' 		=> __( 'Collect.js could not be loaded. Please try a different payment method or contact the administrator.', 'wc-nmi' ),
 		);
-        $nmi_params['is_checkout'] = ( is_checkout() && empty( $_GET['pay_for_order'] ) ) ? 'yes' : 'no'; // wpcs: csrf ok.
+		$nmi_params['is_checkout'] = ( is_checkout() && empty( $_GET['pay_for_order'] ) ) ? 'yes' : 'no'; // wpcs: csrf ok.
 
-		wp_localize_script( 'woocommerce_nmi', 'wc_nmi_params', apply_filters( 'wc_nmi_params', $nmi_params ) );
+		return $nmi_params;
 	}
 
     public function add_public_key_to_js( $tag, $handle ) {
@@ -422,7 +430,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
         if( !isset( $_POST['nmi_js_response'] ) ) {
             return false;
         }
-		$response = json_decode( stripslashes( $_POST['nmi_js_response'] ), 1 );
+		$response = json_decode( wc_clean( wp_unslash( $_POST['nmi_js_response'] ) ), 1 );
 		return $response;
 	}
 
@@ -801,6 +809,10 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		if ( $this->logging ) {
 			WC_NMI_Logger::log( $message );
 		}
+	}
+
+	public function get_tokens() {
+		return array();
 	}
 
 }

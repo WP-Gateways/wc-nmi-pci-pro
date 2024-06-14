@@ -10,10 +10,11 @@ Text Domain: wc-nmi
 Domain Path: /languages
 WC requires at least: 3.3
 WC tested up to: 9.0
+License: GPLv3
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Requires Plugins: woocommerce
 
 	Copyright: © Pledged Plugins.
-	License: GNU General Public License v3.0
-	License URI: http://www.gnu.org/licenses/gpl-3.0.html
 */
 
 if ( ! defined( 'ABSPATH' ) ) {

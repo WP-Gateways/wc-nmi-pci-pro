@@ -8,8 +8,8 @@ Requires at least: 4.4
 Tested up to: 6.5
 Requires PHP: 5.6
 Stable tag: 1.2.0
-License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License: GPLv3
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 This plugin enables you to use the NMI payment gateway and accept credit cards directly on your WooCommerce powered WordPress e-commerce website in a PCI compliant manner without redirecting customers away to the gateway website.
 
@@ -64,7 +64,6 @@ This plugin is not affiliated with or supported by NMI, WooCommerce.com or Autom
 5. On this page you will find all of the configuration options for this payment gateway.
 6. Enable the method by using the checkbox.
 7. Enter the NMI API keys (Private Key and Public Key).
-
 
 That's it! You are ready to accept credit cards with your NMI merchant account now connected to WooCommerce.
 

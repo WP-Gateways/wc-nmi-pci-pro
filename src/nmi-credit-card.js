@@ -198,6 +198,7 @@ export const CreditCardComponent = ({
 	return (
 		<LoadingMask
 			isLoading={collectJSLoading}
+			showSpinner='true'
 			screenReaderLabel={__('Loading payment fields…', TEXT_DOMAIN)}
 		>
 			{publicKey ? CollectJSElements() : 'public key not available yet'}

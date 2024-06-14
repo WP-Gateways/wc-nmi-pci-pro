@@ -44,6 +44,7 @@ export const usePaymentProcessing = (
 						message: error,
 					};
 				}
+				window.collectResponse = '';
 				window.CollectJS.startPaymentRequest();
 				await waitForCollectJsToken().catch((err) => {
 					console.error('waitForCollectJsToken error: ', err);
@@ -75,26 +76,6 @@ export const usePaymentProcessing = (
 				}
 				const billingAddress = billing.billingAddress;
 
-				const ownerInfo = {
-					address: {
-						line1: billingAddress.address_1,
-						line2: billingAddress.address_2,
-						city: billingAddress.city,
-						state: billingAddress.state,
-						postal_code: billingAddress.postcode,
-						country: billingAddress.country,
-					},
-				};
-				if (billingAddress.phone) {
-					ownerInfo.phone = billingAddress.phone;
-				}
-				if (billingAddress.email) {
-					ownerInfo.email = billingAddress.email;
-				}
-				if (billingAddress.first_name || billingAddress.last_name) {
-					ownerInfo.name = `${billingAddress.first_name} ${billingAddress.last_name}`;
-				}
-
 				const nmiArgs = {
 					nmi_token: window.collectResponse?.token,
 					nmi_js_response: JSON.stringify(window.collectResponse),
@@ -105,9 +86,8 @@ export const usePaymentProcessing = (
 					meta: {
 						paymentMethodData: {
 							...nmiArgs,
-							billing_email: ownerInfo.email,
-							billing_first_name:
-								billingAddress?.first_name ?? '',
+							billing_email: billingAddress.email,
+							billing_first_name: billingAddress?.first_name ?? '',
 							billing_last_name: billingAddress?.last_name ?? '',
 							paymentMethod: PAYMENT_METHOD_NAME,
 							paymentRequestType: 'cc',

@@ -75,6 +75,7 @@ A valid SSL certificate is required to ensure your customer credit card details 
 == Changelog ==
 
 = 1.2.1 =
+Fixed error message not showing on block checkout
 Fixed issue with collect.js being enqueued everywhere
 Updated compatibility info to WordPress 6.6
 Updated "WC tested up to" header to 9.2

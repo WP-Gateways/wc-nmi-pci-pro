@@ -18,6 +18,10 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 	 */
 	protected $name = 'nmi';
 
+	public function __construct() {
+		add_action( 'woocommerce_rest_checkout_process_payment_with_context', [ $this, 'add_error_message_to_payment_result' ], 8, 2 );
+	}
+
 	/**
 	 * Initializes the payment method type.
 	 */
@@ -57,7 +61,7 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 		$js_params = $this->get_gateway_javascript_params();
 
 		if( ! empty( $js_params['public_key'] ) ) {
-			wp_enqueue_script( 'nmi-collect-js', 'https://secure.nmi.com/token/Collect.js', '', null, true );
+			wp_register_script( 'nmi-collect-js', 'https://secure.nmi.com/token/Collect.js', '', null, true );
 			$dependencies = array_merge( [ 'nmi-collect-js' ], $dependencies );
 		}
 
@@ -215,5 +219,29 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 			return array_filter( $gateway->supports, [ $gateway, 'supports' ] );
 		}
 		return [];
+	}
+
+	/**
+	 * Add error message to the payment result for block checkout
+	 * woocommerce_rest_checkout_process_payment_with_context action.
+	 *
+	 * @param PaymentContext $context Holds context for the payment.
+	 * @param PaymentResult  $result  Result object for the payment.
+	 */
+	public function add_error_message_to_payment_result( PaymentContext $context, PaymentResult &$result ) {
+
+		if( $this->name === $context->payment_method ) {
+			// Hook into NMI error processing so that we can capture the error to payment details.
+			// This error would have been registered via wc_add_notice() and thus is not helpful for block checkout processing.
+			add_action(
+				'wc_gateway_nmi_process_payment_error',
+				function( $error ) use ( &$result ) {
+					$payment_details                 = $result->payment_details;
+					$payment_details['errorMessage'] = wp_strip_all_tags( $error->getMessage() );
+					$result->set_payment_details( $payment_details );
+				}
+			);
+		}
+
 	}
 }

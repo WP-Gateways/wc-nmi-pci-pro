@@ -1,7 +1,7 @@
 === WP NMI Gateway PCI for WooCommerce ===
 Contributors: mohsinoffline
 Donate link: https://wpgateways.com/support/send-payment/
-Tags: nmi, network merchants, payment gateway, woocommerce, pci, pci-dss, tokenization, woocommerce subscriptions, recurring payments, pre order
+Tags: nmi, network merchants, payment gateway, woocommerce, pci
 Plugin URI: https://bitbucket.org/pledged/wc-nmi-pci-pro
 Author URI: https://pledgedplugins.com
 Requires at least: 4.4

@@ -76,7 +76,8 @@ A valid SSL certificate is required to ensure your customer credit card details 
 == Changelog ==
 
 = 1.2.2 =
-Set order status to Failed if the capture from Edit Order screen fails
+Set order status to Failed only once on unsuccessful capture from Edit Order screen
+Updated "WC tested up to" header to 9.4
 
 = 1.2.1 =
 Fixed error message not showing on block checkout

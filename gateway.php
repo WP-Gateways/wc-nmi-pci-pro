@@ -9,7 +9,7 @@ Author URI: https://pledgedplugins.com
 Text Domain: wc-nmi
 Domain Path: /languages
 WC requires at least: 3.3
-WC tested up to: 9.2
+WC tested up to: 9.4
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Requires Plugins: woocommerce
@@ -278,7 +278,13 @@ class WC_NMI_PCI {
 				$response = $gateway->nmi_request( $args );
 
 				if ( is_wp_error( $response ) ) {
-					$order->update_status( 'failed', __( 'Unable to capture charge!', 'wc-nmi' ) . ' ' . $response->get_error_message() );
+					if( $order->get_meta( '_nmi_capture_failed' ) == 'yes' ) {
+						$order->add_order_note( sprintf( __( "<strong>Unable to capture charge!</strong> Please <strong>DO NOT FULFIL THE ORDER</strong> if the amount cannot be captured in the gateway account manually or by changing the status. In that case, set status to Failed manually and do not fulfil. \n\nNMI failure reason: %s \n\n", 'wc-nmi' ), $response->get_error_message() ) );
+					} else {
+						$order->update_status( 'failed', sprintf( __( "<strong>Unable to capture charge!</strong> The order status is set to <strong>Failed</strong> the first time to draw your attention. If the next attempt fails, your intended order status will still take place. \n\nPlease double-check that the amount is captured in the gateway account before fulfilling the order. \n\nNMI failure reason: %s \n\n", 'wc-nmi' ), $response->get_error_message() ) );
+						$order->update_meta_data( '_nmi_capture_failed', 'yes' );
+						$order->save();
+					}
 				} else {
 					$complete_message = sprintf( __( 'NMI charge complete (Charge ID: %s)', 'wc-nmi' ), $response['transactionid'] );
  					$order->add_order_note( $complete_message );

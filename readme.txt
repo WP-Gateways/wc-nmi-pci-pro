@@ -77,6 +77,8 @@ A valid SSL certificate is required to ensure your customer credit card details 
 
 = 1.2.2 =
 Set order status to Failed only once on unsuccessful capture from Edit Order screen
+Added "Capture authorized transaction on status change" option
+Prevent blocking the billing details area for distraction free checkout
 Updated "WC tested up to" header to 9.4
 
 = 1.2.1 =

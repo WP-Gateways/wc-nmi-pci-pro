@@ -256,7 +256,7 @@ class WC_NMI_PCI {
 			$charge   = $order->get_meta( '_nmi_charge_id' );
 			$captured = $order->get_meta( '_nmi_charge_captured' );
 
-			if ( $charge && $captured == 'no' ) {
+			if ( $gateway->capture_on_status_change && $charge && $captured == 'no' ) {
 
 				$gateway->log( "Info: Beginning capture payment for order $order_id for the amount of {$order->get_total()}" );
 

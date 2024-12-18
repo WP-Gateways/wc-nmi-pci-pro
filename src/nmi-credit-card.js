@@ -51,6 +51,7 @@ export const CreditCardComponent = ({
 						height: '20px',
 						'line-height': '20px',
 						padding: '0px',
+						'border-width': '0px',
 						'pointer-events': 'auto',
 					},
 					styleSniffer: 'true',

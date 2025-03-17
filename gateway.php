@@ -9,7 +9,7 @@ Author URI: https://pledgedplugins.com
 Text Domain: wc-nmi
 Domain Path: /languages
 WC requires at least: 3.3
-WC tested up to: 9.7
+WC tested up to: 9.8
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Requires Plugins: woocommerce

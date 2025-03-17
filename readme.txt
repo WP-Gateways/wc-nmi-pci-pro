@@ -76,7 +76,8 @@ A valid SSL certificate is required to ensure your customer credit card details 
 == Changelog ==
 
 = 1.2.4 =
-* Updated "WC tested up to" header to 9.7
+* Added card validation error to order notes when collect.js is disabled
+* Updated "WC tested up to" header to 9.8
 
 = 1.2.3 =
 * Added block checkout styling improvements

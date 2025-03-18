@@ -11,7 +11,7 @@ Stable tag: 1.2.4
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-This plugin enables you to use the NMI payment gateway and accept credit cards directly on your WooCommerce powered WordPress e-commerce website in a PCI compliant manner without redirecting customers away to the gateway website.
+PCI Compliant NMI payment gateway integration for WooCommerce to accept credit cards directly on WordPress e-commerce websites.
 
 == Description ==
 

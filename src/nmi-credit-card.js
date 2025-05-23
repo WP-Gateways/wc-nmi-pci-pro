@@ -67,6 +67,7 @@ export const CreditCardComponent = ({
 					timeoutDuration: PAYMENT_TIMEOUT_DURATION,
 					timeoutCallback: function () {},
 					fieldsAvailableCallback: function () {
+						console.log('card fields available');
 						setCollectJSLoading(false);
 						window.collectResponse = '';
 						window.effectTriggerTimes = 0;
@@ -139,15 +140,19 @@ export const CreditCardComponent = ({
 		if (field === 'cvv') {
 			setcccvv(status ? '' : message);
 		}
-
-		if (status === false) {
-			onNMIError(message);
-		} else {
-			if (ccnumber === '' && cccvv === '' && ccexp === '') {
-				onNMIError('');
-			}
-		}
 	};
+
+	useEffect(() => {
+		if (ccnumber) {
+			onNMIError(ccnumber);
+		} else if (cccvv) {
+			onNMIError(cccvv)
+		} else if (ccexp) {
+			onNMIError(ccexp)
+		} else {
+			onNMIError('');
+		}
+	}, [ccnumber, cccvv, ccexp]);
 
 	//#endregion
 

@@ -25,7 +25,7 @@ export const CreditCardComponent = ({
 	const { PaymentMethodIcons, ValidationInputError, LoadingMask } =
 		components;
 
-	const [isWindowAvaialble, setIsWindowAvailable] = useState(false);
+	const [isWindowAvailable, setIsWindowAvailable] = useState(false);
 	const [collectJSLoading, setCollectJSLoading] = useState(false);
 
 	const [publicKey, setPublicKey] = useState();
@@ -97,7 +97,7 @@ export const CreditCardComponent = ({
 	};
 
 	useEffect(() => {
-		if (publicKey && publicKey.length > 0 && isWindowAvaialble) {
+		if (publicKey && publicKey.length > 0 && isWindowAvailable) {
 			configureCollectJs();
 		}
 	}, [publicKey]);

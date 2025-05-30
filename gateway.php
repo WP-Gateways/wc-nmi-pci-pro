@@ -140,8 +140,14 @@ class WC_NMI_PCI {
         add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_action_links' ), 11 );
 		add_action( 'init', array( $this, 'load_plugin_textdomain' ) );
 
-		add_action( 'woocommerce_order_status_processing', array( $this, 'capture_payment' ), 10, 3 );
-		add_action( 'woocommerce_order_status_completed', array( $this, 'capture_payment' ), 10, 3 );
+		if( version_compare( WC_VERSION, '8.4.0', '<' ) ) {
+			add_action( 'woocommerce_order_status_processing', array( $this, 'capture_payment' ), 10, 2 );
+			add_action( 'woocommerce_order_status_completed', array( $this, 'capture_payment' ), 10, 2 );
+		} else {
+			add_action( 'woocommerce_order_status_processing', array( $this, 'capture_payment' ), 10, 3 );
+			add_action( 'woocommerce_order_status_completed', array( $this, 'capture_payment' ), 10, 3 );
+		}
+
 		add_action( 'woocommerce_order_status_cancelled', array( $this, 'cancel_payment' ) );
 		add_action( 'woocommerce_order_status_refunded', array( $this, 'cancel_payment' ) );
 
@@ -255,13 +261,13 @@ class WC_NMI_PCI {
 	 * @param $order
 	 * @param $status_transition
 	 */
-	public function capture_payment( $order_id, $order, $status_transition ) {
-		$order = wc_get_order( $order_id );
-		$gateway = new WC_Gateway_NMI();
+	public function capture_payment( $order_id, $order, $status_transition = array() ) {
 
 		if ( $order->get_payment_method() == 'nmi' ) {
 			$charge   = $order->get_meta( '_nmi_charge_id' );
 			$captured = $order->get_meta( '_nmi_charge_captured' );
+
+			$gateway = new WC_Gateway_NMI();
 
 			if ( apply_filters( 'wc_nmi_capture_on_status_change', $gateway->capture_on_status_change, $order, $status_transition ) && $charge && $captured == 'no' ) {
 
@@ -314,14 +320,16 @@ class WC_NMI_PCI {
 	 * @param  int $order_id
 	 */
 	public function cancel_payment( $order_id ) {
+
 		$order = wc_get_order( $order_id );
-		$gateway = new WC_Gateway_NMI();
 
 		if ( $order->get_payment_method() == 'nmi' ) {
-			$charge = $order->get_meta( '_nmi_charge_id' );
+			$charge   = $order->get_meta( '_nmi_charge_id' );
 			$captured = $order->get_meta( '_nmi_charge_captured' );
 
 			if ( $charge && $captured == 'no' ) {
+
+				$gateway = new WC_Gateway_NMI();
 
 				$gateway->log( "Info: Beginning cancel payment for order $order_id for the amount of {$order->get_total()}" );
 

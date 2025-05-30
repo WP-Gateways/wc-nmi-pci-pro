@@ -2,8 +2,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: WP NMI Gateway PCI for WooCommerce\n"
-"POT-Creation-Date: 2025-05-28 22:06+0530\n"
-"PO-Revision-Date: 2025-05-28 22:06+0530\n"
+"POT-Creation-Date: 2025-05-30 18:38+0530\n"
+"PO-Revision-Date: 2025-05-30 18:38+0530\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -35,28 +35,28 @@ msgstr ""
 msgid "Support"
 msgstr ""
 
-#: gateway.php:183
+#: gateway.php:189
 #, php-format
 msgid ""
 "NMI is almost ready. To get started, <a href=\"%s\">set your NMI account "
 "keys</a>."
 msgstr ""
 
-#: gateway.php:221
+#: gateway.php:227
 msgid "WooCommerce NMI extension requires WooCommerce to be activated to work."
 msgstr ""
 
-#: gateway.php:225
+#: gateway.php:231
 msgid "WooCommerce NMI - cURL is not installed."
 msgstr ""
 
-#: gateway.php:229
+#: gateway.php:235
 msgid ""
 "There are two WooCommerce NMI extensions installed from Pledged Plugins "
 "which can cause conflicts. Please deactivate one of them."
 msgstr ""
 
-#: gateway.php:289
+#: gateway.php:295
 #, php-format
 msgid ""
 "<strong>Unable to capture charge!</strong> Please <strong>DO NOT FULFIL THE "
@@ -68,7 +68,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: gateway.php:291
+#: gateway.php:297
 #, php-format
 msgid ""
 "<strong>Unable to capture charge!</strong> The order status is set to "
@@ -82,16 +82,16 @@ msgid ""
 "\n"
 msgstr ""
 
-#: gateway.php:296
+#: gateway.php:302
 #, php-format
 msgid "NMI charge captured (Charge ID: %s)."
 msgstr ""
 
-#: gateway.php:340
+#: gateway.php:348
 msgid "Unable to refund charge!"
 msgstr ""
 
-#: gateway.php:342
+#: gateway.php:350
 #, php-format
 msgid "NMI charge refunded (Charge ID: %s)."
 msgstr ""
@@ -318,7 +318,9 @@ msgstr ""
 
 #: includes/class-wc-gateway-nmi.php:310
 #, php-format
-msgid "<a href=\"%s\">Click here</a> to check and delete the full log file."
+msgid ""
+"<a target=\"_blank\" href=\"%s\">Click here</a> to check and delete the full "
+"log file."
 msgstr ""
 
 #: includes/class-wc-gateway-nmi.php:314

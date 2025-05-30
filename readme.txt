@@ -77,8 +77,10 @@ A valid SSL certificate is required to ensure your customer credit card details 
 == Changelog ==
 
 = 1.2.6 =
-Added better error handling  
-Updated "WC tested up to" header to 9.9  
+* Added better error handling for card fields validation
+* Fixed issues with WC version < 8.4.0
+* Fixed gateway log URL
+* Updated "WC tested up to" header to 9.9
 
 = 1.2.5 =
 * Added filter for capturing on order status change

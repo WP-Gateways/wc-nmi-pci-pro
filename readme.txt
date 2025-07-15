@@ -7,7 +7,7 @@ Author URI: https://pledgedplugins.com
 Requires at least: 4.4
 Tested up to: 6.8
 Requires PHP: 5.6
-Stable tag: 1.2.6
+Stable tag: 1.2.7
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -75,6 +75,9 @@ That's it! You are ready to accept credit cards with your NMI merchant account n
 A valid SSL certificate is required to ensure your customer credit card details are safe and make your site PCI DSS compliant. This plugin does not store the customer credit card numbers or sensitive information on your website.
 
 == Changelog ==
+
+= 1.2.7 =
+* Updated "WC tested up to" header to 10.0
 
 = 1.2.6 =
 * Added better error handling for card fields validation

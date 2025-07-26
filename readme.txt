@@ -33,6 +33,7 @@ PCI Compliant NMI payment gateway integration for WooCommerce to accept credit c
 > * **Shipping Fields:**  Pass shipping address to NMI.
 > * **AVS and CVV Responses:**  Store AVS and CVV responses in order notes.
 > * **Payment Amounts:**  Display the payment amounts in order notes.
+> * **Dynamic Descriptors:**  Pass dynamic descriptor to NMI that will appear on a credit card or bank statement of the customer.
 >
 > #### Enterprise Version Features
 > * Everything that is in the Free and Pro versions plus...

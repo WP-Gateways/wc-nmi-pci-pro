@@ -38,7 +38,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		$this->has_fields           = true;
 		$this->supports             = array(
 			'products',
-			'refunds'
+			'refunds',
 			'wcapgp_apple_pay',
 			'wcapgp_google_pay',
 		);

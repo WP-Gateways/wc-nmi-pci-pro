@@ -416,12 +416,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
         add_filter( 'script_loader_tag', array( $this, 'add_public_key_to_js' ), 10, 2 );
 
 		wp_enqueue_script( 'nmi-collect-js', 'https://secure.nmi.com/token/Collect.js', '', null, true );
-
-		if( version_compare( WC_VERSION, '10.3', '<' ) ) {
-			wp_enqueue_script( 'woocommerce_nmi', plugins_url( 'assets/js/nmi.js', WC_NMI_PCI_MAIN_FILE ), array( 'jquery-payment', 'nmi-collect-js' ), WC_NMI_PCI_VERSION, true );
-		} else {
-			wp_enqueue_script( 'woocommerce_nmi', plugins_url( 'assets/js/nmi.js', WC_NMI_PCI_MAIN_FILE ), array( 'wc-jquery-payment', 'nmi-collect-js' ), WC_NMI_PCI_VERSION, true );
-		}
+		wp_enqueue_script( 'woocommerce_nmi', plugins_url( 'assets/js/nmi.js', WC_NMI_PCI_MAIN_FILE ), array( 'nmi-collect-js' ), WC_NMI_PCI_VERSION, true );
 
 		wp_localize_script( 'woocommerce_nmi', 'wc_nmi_params', apply_filters( 'wc_nmi_params', $this->javascript_params() ) );
 	}

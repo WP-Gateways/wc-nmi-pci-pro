@@ -634,7 +634,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
             $args['currency'] = get_woocommerce_currency();
         }
 
-        if( isset( $args['state'] ) && empty( $args['state'] ) && ! in_array( $args['type'], array( 'capture', 'void', 'refund' ) ) ) {
+        if( !empty( $args['country'] ) && empty( $args['state'] ) && ! in_array( $args['type'], array( 'capture', 'void', 'refund' ) ) ) {
             $args['state'] = 'NA';
         }
 

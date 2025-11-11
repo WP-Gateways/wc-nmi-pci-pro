@@ -79,6 +79,7 @@ A valid SSL certificate is required to ensure your customer credit card details 
 
 = 1.2.10 =
 * Removed jquery-payment script handle
+* Fixed state being passed as NA when the address fields are empty
 
 = 1.2.9 =
 * Made compatible with Theme high multi step checkout

@@ -1,4 +1,4 @@
-=== WP NMI Gateway PCI for WooCommerce ===
+=== Pledged Plugins PCI Gateway for NMI and WooCommerce ===
 Contributors: mohsinoffline
 Donate link: https://wpgateways.com/support/send-payment/
 Tags: nmi, network merchants, payment gateway, woocommerce, pci
@@ -7,7 +7,7 @@ Author URI: https://pledgedplugins.com
 Requires at least: 4.4
 Tested up to: 6.8
 Requires PHP: 5.6
-Stable tag: 1.2.9
+Stable tag: 1.2.10
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -76,6 +76,10 @@ That's it! You are ready to accept credit cards with your NMI merchant account n
 A valid SSL certificate is required to ensure your customer credit card details are safe and make your site PCI DSS compliant. This plugin does not store the customer credit card numbers or sensitive information on your website.
 
 == Changelog ==
+
+= 1.2.10 =
+* Removed jquery-payment script handle
+* Fixed state being passed as NA when the address fields are empty
 
 = 1.2.9 =
 * Made compatible with Theme high multi step checkout

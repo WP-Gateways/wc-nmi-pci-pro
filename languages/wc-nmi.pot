@@ -1,7 +1,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: WP NMI Gateway PCI for WooCommerce\n"
+"Project-Id-Version: Pledged Plugins PCI Gateway for NMI and WooCommerce\n"
 "POT-Creation-Date: 2025-11-11 21:10+0530\n"
 "PO-Revision-Date: 2025-11-11 21:10+0530\n"
 "Last-Translator: \n"
@@ -586,7 +586,7 @@ msgid "Loading payment fields…"
 msgstr ""
 
 #. Plugin Name of the plugin/theme
-msgid "WP NMI Gateway PCI for WooCommerce"
+msgid "Pledged Plugins PCI Gateway for NMI and WooCommerce"
 msgstr ""
 
 #. Plugin URI of the plugin/theme

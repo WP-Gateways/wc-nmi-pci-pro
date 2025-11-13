@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "extension/wp-nmi-gateway-pci-woocommerce",
 	"version": "1.2.10",
-	"title": "WP NMI Gateway PCI for WooCommerce",
+	"title": "Pledged Plugins PCI Gateway for NMI and WooCommerce",
 	"category": "widgets",
 	"textdomain": "wc-nmi",
 	"editorScript": "file:./build/index.js",

@@ -61,7 +61,9 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 		$js_params = $this->get_gateway_javascript_params();
 
 		if( ! empty( $js_params['public_key'] ) ) {
-			wp_register_script( 'nmi-collect-js', 'https://secure.nmi.com/token/Collect.js', '', null, true );
+			$collect_js_url = $this->testmode ? 'https://sandbox.nmi.com/token/Collect.js' : 'https://secure.nmi.com/token/Collect.js';
+			wp_register_script( 'nmi-collect-js', $collect_js_url, '', null, true );
+
 			$dependencies = array_merge( [ 'nmi-collect-js' ], $dependencies );
 		}
 

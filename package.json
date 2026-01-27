@@ -1,6 +1,6 @@
 {
-	"name": "wp-nmi-gateway-pci-woocommerce",
-	"version": "1.2.11",
+	"name": "woocommerce-gateway-plugnpay",
+	"version": "1.1.0",
 	"author": "Pledged Plugins",
 	"license": "GPL-3.0+",
 	"main": "build/index.js",
@@ -33,7 +33,7 @@
 		"/languages",
 		"/woo-includes",
 		"/updates",
-		"gateway.php",
+		"woocommerce-gateway-plugnpay.php",
 		"block.json",
 		"readme.txt",
 		"readme.md",

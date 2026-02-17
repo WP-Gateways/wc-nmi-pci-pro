@@ -251,9 +251,9 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			),
 			'testmode' => array(
 				'title'       => __( 'Sandbox Mode', 'wc-nmi' ),
-				'label'       => __( 'Enable Sandbox Mode', 'wc-nmi' ),
+				'label'       => __( 'Place the payment gateway in sandbox mode. This will display test information on the checkout page.', 'wc-nmi' ),
 				'type'        => 'checkbox',
-				'description' => __( 'Place the payment gateway in sandbox mode. This will display test information on the checkout page. <strong>NOTE: If you have an older test merchant account, please keep this sandbox mode option unchecked and run the gateway as live mode, because older test accounts work only with the secure.nmi.com API domain, which the plugin already handles. If you have a new merchant account from the guide.nmi.com domain then only please enable this option to run in the sandbox mode and for no live payments.</strong>', 'wc-nmi' ),
+				'description' => __( '<strong>NOTE: Sandbox mode is not the same as Test mode.</strong> If your login URL says <code>sandbox.nmi.com</code>, check this option. If it says <code>secure.nmi.com</code> leave the option unchecked, even if it is a test account, and no live payments will take place.', 'wc-nmi' ),
 				'default'     => 'yes'
 			),
 			'api_keys' => array(

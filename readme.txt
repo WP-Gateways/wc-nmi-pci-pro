@@ -81,7 +81,7 @@ A valid SSL certificate is required to ensure your customer credit card details 
 * Changed wording for Test Mode to Sandbox Mode
 * Used sandbox.nmi.com domain for newer sandbox accounts
 * Updated compatibility info to WordPress 6.9
-* Updated "WC tested up to" header to 10.5
+* Updated "WC tested up to" header to 10.6
 
 = 1.2.10 =
 * Removed jquery-payment script handle

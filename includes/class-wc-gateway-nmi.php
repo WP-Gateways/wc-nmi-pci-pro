@@ -474,7 +474,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		try {
 			$post_data = array();
 
-			if( !$this->get_nmi_js_response() ) {
+			if( ! $this->get_nmi_js_response() && empty( $_POST['wcapgp_google_pay_payment_data'] ) && empty( $_POST['wcapgp_apple_pay_payment_data'] ) ) {
 
 				// Check for CC details filled or not
 				if( empty( $_POST['nmi-card-number'] ) || empty( $_POST['nmi-card-expiry'] ) || empty( $_POST['nmi-card-cvc'] ) ) {

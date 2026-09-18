@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: Pledged Plugins PCI Gateway for NMI and WooCommerce
+Plugin Name: Secure PCI Gateway for NMI and WooCommerce
 Plugin URI: https://bitbucket.org/pledged/wc-nmi-pci-pro
 Description: A PCI compliant payment gateway for NMI. An NMI account and a server with cURL, SSL support, and a valid SSL certificate is required (for security reasons) for this gateway to function. Requires WC 3.3+
 Version: 1.2.11

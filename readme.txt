@@ -1,4 +1,4 @@
-=== Pledged Plugins PCI Gateway for NMI and WooCommerce ===
+=== Secure PCI Gateway for NMI and WooCommerce ===
 Contributors: mohsinoffline
 Donate link: https://wpgateways.com/support/send-payment/
 Tags: nmi, network merchants, payment gateway, woocommerce, pci

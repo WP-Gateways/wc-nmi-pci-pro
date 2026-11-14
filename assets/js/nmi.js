@@ -5,6 +5,16 @@ jQuery( function( $ ) {
         card_allowed;
 
 	/**
+	 * Log to the browser console, only when Gateway Debug is enabled (wc_nmi_params.debug).
+	 * Responses can include card details, so they're never logged otherwise.
+	 */
+	const debug = function() {
+		if ( wc_nmi_params.debug ) {
+			console.log( '[NMI]', ...arguments );
+		}
+	};
+
+	/**
 	 * Object to handle NMI payment forms.
 	 */
 	let wc_nmi_form = {
@@ -18,51 +28,62 @@ jQuery( function( $ ) {
 				"height": "30px"
             }
 
+			this.form.find( '.nmi-source-errors' ).html( '' );
+
 			if (window.CollectJS !== undefined) {
 
-				CollectJS.configure({
-					//"paymentSelector" : "#place_order",
-					"variant": "inline",
-					"styleSniffer": "true",
-					"customCss": customCss,
-					//"googleFont": "Montserrat:400",
-					"fields": {
-						"ccnumber": {
-							"selector": "#nmi-card-number-element",
-							"placeholder": "•••• •••• •••• ••••"
+				// If Collect.js never mounts the fields, don't leave the payment section blocked without explanation.
+				clearTimeout( wc_nmi_form.fields_timeout );
+				wc_nmi_form.fields_timeout = setTimeout( function() {
+					$( document ).trigger( 'nmiError', wc_nmi_params.collect_js_error );
+				}, 15000 );
+
+				try {
+					CollectJS.configure({
+						//"paymentSelector" : "#place_order",
+						"variant": "inline",
+						"styleSniffer": "true",
+						"customCss": customCss,
+						//"googleFont": "Montserrat:400",
+						"fields": {
+							"ccnumber": {
+								"selector": "#nmi-card-number-element",
+								"placeholder": "•••• •••• •••• ••••"
+							},
+							"ccexp": {
+								"selector": "#nmi-card-expiry-element",
+								"placeholder": wc_nmi_params.placeholder_expiry
+							},
+							"cvv": {
+								"display": "show",
+								"selector": "#nmi-card-cvc-element",
+								"placeholder": wc_nmi_params.placeholder_cvc
+							}
 						},
-						"ccexp": {
-							"selector": "#nmi-card-expiry-element",
-							"placeholder": wc_nmi_params.placeholder_expiry
+						'validationCallback': function (field, status, message) {
+							nmi_error[field] = status ? '' : message;
+							debug( field + ( status ? ' is OK: ' : ' is invalid: ' ) + message );
 						},
-						"cvv": {
-							"display": "show",
-							"selector": "#nmi-card-cvc-element",
-							"placeholder": wc_nmi_params.placeholder_cvc
+						"timeoutDuration": 20000,
+						"timeoutCallback": function () {
+							$(document).trigger('nmiError', wc_nmi_params.timeout_error);
+						},
+						"fieldsAvailableCallback": function () {
+							clearTimeout( wc_nmi_form.fields_timeout );
+							wc_nmi_form.mounting = false;
+							wc_nmi_form.mounted = true;
+							wc_nmi_form.unblock();
+							wc_nmi_form.unblockPayment();
+							debug( 'Collect.js loaded the fields onto the form' );
+						},
+						'callback': function (response) {
+							wc_nmi_form.onNMIResponse(response);
 						}
-					},
-					'validationCallback': function (field, status, message) {
-						if (status) {
-							message = field + " is OK: " + message;
-							nmi_error[field] = '';
-						} else {
-							nmi_error[field] = message;
-						}
-						console.log(message);
-					},
-					"timeoutDuration": 20000,
-					"timeoutCallback": function () {
-						$(document).trigger('nmiError', wc_nmi_params.timeout_error);
-					},
-					"fieldsAvailableCallback": function () {
-						wc_nmi_form.unblock();
-						wc_nmi_form.unblockPayment();
-						console.log("Collect.js loaded the fields onto the form");
-					},
-					'callback': function (response) {
-						wc_nmi_form.onNMIResponse(response);
-					}
-				});
+					});
+				} catch ( error ) {
+					debug( 'Collect.js configure error', error );
+					$(document).trigger('nmiError', wc_nmi_params.collect_js_error);
+				}
 			} else {
 				$(document).trigger('nmiError', wc_nmi_params.collect_js_error);
 				$('#wc-nmi-cc-form label, #wc-nmi-cc-form .wc-nmi-elements-field').hide();
@@ -96,17 +117,6 @@ jQuery( function( $ ) {
 					this.onSubmit
 				);
 
-			// add payment method page
-			if ( $( 'form#add_payment_method' ).length ) {
-				this.form = $( 'form#add_payment_method' );
-			}
-
-			$( 'form#add_payment_method' )
-				.on(
-					'submit',
-					this.onSubmit
-				);
-
 			$( document )
 				.on(
 					'change',
@@ -124,27 +134,18 @@ jQuery( function( $ ) {
 
 			// Theme high multi step checkout
 			$(document.body)
-				.on('step_jumped', function(step) {
-					console.log($('.wc_payment_methods').height());
-					if ( $('.wc_payment_methods').height() > 0 && wc_nmi_form.isNMIChosen() ) {
-						wc_nmi_form.blockPayment();
-						wc_nmi_form.createElements();
+				.on('step_jumped', function() {
+					if ( $('.wc_payment_methods').height() > 0 ) {
+						wc_nmi_form.mountFields();
 					}
 				});
 
-            if ( wc_nmi_form.isNMIChosen() ) {
-                wc_nmi_form.blockPayment();
-                wc_nmi_form.createElements();
-            }
+			wc_nmi_form.mountFields();
 
 		    // CheckoutWC and woolentor, La Forat theme, Avada multi step checkout
 			$( 'body' ).on( 'click', '.custom_checkout_page a[href="#next"], a[href="#cfw-payment-method"], a[data-tab="#cfw-payment-method"], a[data-step="step--payment"], a.ro-tab-2, a.ro-btn-2, button.wfacp_next_page_button, .woocommerce-checkout-nav a,.continue-checkout', function() {
-                // Don't re-mount if already mounted in DOM.
-                if ( wc_nmi_form.isNMIChosen() ) {
-                    wc_nmi_form.blockPayment();
-                    wc_nmi_form.createElements();
-                }
-            } );
+				wc_nmi_form.mountFields();
+			} );
 
             /**
 			 * Only in checkout page we need to delay the mounting of the
@@ -152,39 +153,100 @@ jQuery( function( $ ) {
 			 */
 			if ( 'yes' === wc_nmi_params.is_checkout ) {
 				$( document.body ).on( 'updated_checkout', function() {
-					// Re-mount  on updated checkout
-                    if ( wc_nmi_form.isNMIChosen() ) {
-                        wc_nmi_form.blockPayment();
-				        wc_nmi_form.createElements();
-                    }
-
+					// The payment section is re-rendered, so always re-mount.
+					wc_nmi_form.mountFields( true );
 				} );
 			}
 
-            $( document.body ).on( 'payment_method_selected', function() {
-                // Don't re-mount if already mounted in DOM.
-                if ( wc_nmi_form.isNMIChosen() && ! $( '#nmi-card-number-element' ).children().length ) {
-                    wc_nmi_form.block();
-                    wc_nmi_form.createElements();
-                }
-            } );
+			$( document.body ).on( 'payment_method_selected', function() {
+				wc_nmi_form.mountFields();
+			} );
 
-            if( this.form !== undefined ) {
-                this.form.on( 'click change', 'input[name="wc-nmi-payment-token"]', function() {
-                    if ( wc_nmi_form.isNMIChosen() && ! $( '#nmi-card-number-element' ).children().length ) {
-                        wc_nmi_form.block();
-                        wc_nmi_form.createElements();
-                    }
-                } );
-            }
+			// Not every page fires payment_method_selected (e.g. the pay page), so also react to the
+			// payment method radios directly.
+			$( document ).on( 'change', 'input[name="payment_method"]', function() {
+				wc_nmi_form.mountFields();
+			} );
+
+			wc_nmi_form.watchForPaymentFields();
 		},
 
+		/**
+		 * Whether the Collect.js fields are already mounted, or being mounted.
+		 *
+		 * @return {boolean}
+		 */
+		isMounted: function() {
+			return wc_nmi_form.mounting || ( wc_nmi_form.mounted && 0 < $( '#nmi-card-number-element' ).children().length );
+		},
+
+		/**
+		 * Mount the card fields if NMI is selected, unless they're already mounted.
+		 * Every page and event that can show the NMI fields goes through here.
+		 *
+		 * @param {boolean} force Re-mount even if already mounted, e.g. after the checkout is re-rendered.
+		 */
+		mountFields: function( force ) {
+			if ( ! wc_nmi_form.isNMIChosen() || ( ! force && wc_nmi_form.isMounted() ) ) {
+				return;
+			}
+
+			wc_nmi_form.mounting = true;
+			wc_nmi_form.mounted = false;
+			wc_nmi_form.mountTarget = $( '#nmi-card-number-element' )[ 0 ];
+			wc_nmi_form.blockPayment();
+			wc_nmi_form.createElements();
+		},
+
+		/**
+		 * Safety net for themes and checkout plugins that render the payment section late:
+		 * mount once the NMI field containers appear, then stop watching.
+		 * It only reacts to field containers it hasn't tried to mount yet, so a failed mount (which only
+		 * changes the error markup) doesn't trigger another attempt.
+		 */
+		watchForPaymentFields: function() {
+			if ( ! window.MutationObserver || ! document.body ) {
+				return;
+			}
+
+			let scheduled = false;
+			const observer = new MutationObserver( function() {
+				if ( scheduled ) {
+					return;
+				}
+				scheduled = true;
+				window.requestAnimationFrame( function() {
+					scheduled = false;
+					if ( wc_nmi_form.isNMIChosen() && wc_nmi_form.mounted && ! wc_nmi_form.mounting && wc_nmi_form.isMounted() ) {
+						observer.disconnect();
+						return;
+					}
+					if ( $( '#nmi-card-number-element' )[ 0 ] === wc_nmi_form.mountTarget ) {
+						return;
+					}
+					wc_nmi_form.mountFields();
+				} );
+			} );
+
+			observer.observe( document.body, { childList: true, subtree: true } );
+
+			// Don't keep watching the page indefinitely.
+			setTimeout( function() {
+				observer.disconnect();
+			}, 30000 );
+		},
+
+		/**
+		 * Whether NMI is selected and its card fields are on the page.
+		 *
+		 * @return {boolean}
+		 */
 		isNMIChosen: function() {
-			return $( '#payment_method_nmi' ).is( ':checked' ) && ( ! $( 'input[name="wc-nmi-payment-token"]:checked' ).length || 'new' === $( 'input[name="wc-nmi-payment-token"]:checked' ).val() );
+			return 0 < $( '#nmi-card-number-element' ).length && $( '#payment_method_nmi' ).is( ':checked' );
 		},
 
 		hasToken: function() {
-			return ( 0 < $( 'input.nmi_js_token' ).length ) && ( 0 < $( 'input.nmi_js_response' ).length );
+			return 0 < $( 'input.nmi_js_response' ).length;
 		},
 
 		block: function() {
@@ -210,6 +272,7 @@ jQuery( function( $ ) {
 				}
 			} );
 		},
+
 		unblockPayment: function() {
 			wc_nmi_form.form.find('#payment, .wfacp_payment').unblock();
 		},
@@ -219,33 +282,15 @@ jQuery( function( $ ) {
 		},
 
 		onError: function( e, result ) {
-			//console.log(responseObject.response);
-			let message = result;
-			let selectedMethodElement = wc_nmi_form.getSelectedPaymentElement().closest( 'li' );
-			let savedTokens = selectedMethodElement.find( '.woocommerce-SavedPaymentMethods-tokenInput' );
-			let errorContainer;
-
-			if ( savedTokens.length ) {
-				// In case there are saved cards too, display the message next to the correct one.
-				let selectedToken = savedTokens.filter( ':checked' );
-
-				if ( selectedToken.closest( '.woocommerce-SavedPaymentMethods-new' ).length ) {
-					// Display the error next to the CC fields if a new card is being entered.
-					errorContainer = $( '#wc-nmi-cc-form .nmi-source-errors' );
-				} else {
-					// Display the error next to the chosen saved card.
-					errorContainer = selectedToken.closest( 'li' ).find( '.nmi-source-errors' );
-				}
-			} else {
-				// When no saved cards are available, display the error next to CC fields.
-				errorContainer = selectedMethodElement.find( '.nmi-source-errors' );
-			}
-
+			clearTimeout( wc_nmi_form.fields_timeout );
+			wc_nmi_form.mounting = false;
 			wc_nmi_form.onCCFormChange();
 			$( '.woocommerce-NoticeGroup-checkout' ).remove();
-			console.log( result ); // Leave for troubleshooting.
-			$( errorContainer ).html( '<ul class="woocommerce_error woocommerce-error wc-nmi-error"><li /></ul>' );
-			$( errorContainer ).find( 'li' ).text( message ); // Prevent XSS
+			debug( 'Error', result );
+
+			// Display the error next to the CC fields.
+			const errorContainer = $( '#wc-nmi-cc-form .nmi-source-errors' );
+			errorContainer.html( $( '<ul />' ).addClass( 'woocommerce_error woocommerce-error wc-nmi-error' ).append( $( '<li />' ).text( result ) ) ); // text() prevents XSS
 
 			if ( $( '.wc-nmi-error' ).length ) {
 				$( 'html, body' ).animate({
@@ -259,34 +304,37 @@ jQuery( function( $ ) {
 		onSubmit: function( e ) {
 			if ( wc_nmi_form.isNMIChosen() && ! wc_nmi_form.hasToken() ) {
 				e.preventDefault();
+
+				// Collect.js didn't load, so the card details can't be tokenized.
+				if ( window.CollectJS === undefined ) {
+					$( document.body ).trigger( 'nmiError', wc_nmi_params.collect_js_error );
+					return false;
+				}
+
 				wc_nmi_form.block();
-                let error_message;
+				debug( nmi_error );
 
-                console.log(nmi_error);
+				// Show the first invalid field's error, with Collect.js's reason when there is one.
+				const invalid = [
+					[ '#nmi-card-number-element', 'card_number_error', 'ccnumber' ],
+					[ '#nmi-card-expiry-element', 'card_expiry_error', 'ccexp' ],
+					[ '#nmi-card-cvc-element', 'card_cvc_error', 'cvv' ]
+				].find( function( field ) {
+					return null === document.querySelector( field[0] + ' .CollectJSValid' );
+				} );
 
-                let validCardNumber = document.querySelector("#nmi-card-number-element .CollectJSValid") !== null;
-                let validCardExpiry = document.querySelector("#nmi-card-expiry-element .CollectJSValid") !== null;
-                let validCardCvv = document.querySelector("#nmi-card-cvc-element .CollectJSValid") !== null;
-
-                if( !validCardNumber ) {
-                    error_message = wc_nmi_params.card_number_error + ( nmi_error.ccnumber ? ' ' + wc_nmi_params.error_ref.replace( '[ref]', nmi_error.ccnumber ) : '' );
-                    $( document.body ).trigger( 'nmiError', error_message );
+				if ( invalid ) {
+					const reason = nmi_error[ invalid[2] ];
+					$( document.body ).trigger( 'nmiError', wc_nmi_params[ invalid[1] ] + ( reason ? ' ' + wc_nmi_params.error_ref.replace( '[ref]', reason ) : '' ) );
 					return false;
-                }
+				}
 
-                if( !validCardExpiry ) {
-                    error_message = wc_nmi_params.card_expiry_error + ( nmi_error.ccexp ? ' ' + wc_nmi_params.error_ref.replace( '[ref]', nmi_error.ccexp ) : '' );
-                    $( document.body ).trigger( 'nmiError', error_message );
-					return false;
-                }
-
-                if( !validCardCvv ) {
-                    error_message = wc_nmi_params.card_cvc_error + ( nmi_error.cvv ? ' ' + wc_nmi_params.error_ref.replace( '[ref]', nmi_error.cvv ) : '' );
-                    $( document.body ).trigger( 'nmiError', error_message );
-					return false;
-                }
-
-                CollectJS.startPaymentRequest();
+				try {
+					CollectJS.startPaymentRequest();
+				} catch ( error ) {
+					debug( 'Collect.js error', error );
+					$( document.body ).trigger( 'nmiError', wc_nmi_params.collect_js_error );
+				}
 
 				// Prevent form submitting
 				return false;
@@ -294,38 +342,38 @@ jQuery( function( $ ) {
 		},
 
 		onCCFormChange: function() {
-			$( '.wc-nmi-error, .nmi_js_token, .nmi_js_response' ).remove();
+			$( '.wc-nmi-error, .nmi_js_response' ).remove();
 		},
 
 		onNMIResponse: function( response ) {
-            console.log(response);
+			debug( 'Collect.js response', response );
 
-            if( response.card.type != null ) {
-                wc_nmi_params.allowed_card_types.forEach(function (card_type) {
-                    if( response.card.type == card_type.replace( 'diners-club', 'diners' ) ) {
-                        card_allowed = true;
-                    }
-                });
+			if( response.card && response.card.type != null ) {
+				// Reset for each token, so an earlier allowed card doesn't let a disallowed one through.
+				card_allowed = false;
+				wc_nmi_params.allowed_card_types.forEach(function (card_type) {
+					if( response.card.type == card_type.replace( 'diners-club', 'diners' ) ) {
+						card_allowed = true;
+					}
+				});
 
-                if( ! card_allowed ) {
-                    $( document.body ).trigger( 'nmiError', wc_nmi_params.card_disallowed_error );
+				if( ! card_allowed ) {
+					$( document.body ).trigger( 'nmiError', wc_nmi_params.card_disallowed_error );
 					return false;
-                }
-            }
+				}
+			}
 
-			wc_nmi_form.form.append( "<input type='hidden' class='nmi_js_token' name='nmi_js_token' value='" + response.token + "'/>" );
 			$('<input>').attr({
 				type: 'hidden',
 				class: 'nmi_js_response',
 				name: 'nmi_js_response',
 				value: JSON.stringify(response)
 			}).appendTo(wc_nmi_form.form);
-            //wc_nmi_form.form.append( "<input type='hidden' class='nmi_js_response' name='nmi_js_response' value='" + JSON.stringify(response) + "'/>" );
-            wc_nmi_form.form.submit();
+			wc_nmi_form.form.submit();
 		},
 
 		clearToken: function() {
-			$( '.nmi_js_token, .nmi_js_response' ).remove();
+			$( '.nmi_js_response' ).remove();
 		}
 	};
 

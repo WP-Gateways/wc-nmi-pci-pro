@@ -1,3 +1,7 @@
+.wc-block-nmi-gateway-container {
+	flex-wrap: wrap;
+}
+
 .wc-block-nmi-gateway-container input[type=text],
 .wc-block-nmi-gateway-container input[type=number],
 .wc-block-nmi-gateway-container input[type=tel],
@@ -8,15 +12,40 @@
 	background-color: #ffffff;
 }
 
-.wc-block-nmi-gateway-container input#cardNumber {
-	width:calc(52% - 2.1px) !important;
-}
-.wc-block-nmi-gateway-container input#expiryDate {
-	width:32% !important;
-}
-.wc-block-nmi-gateway-container input#cvc {
-	width:16% !important;
-}
 .wc-block-nmi-gateway-container .wc-block-gateway-input {
-	min-height:50px;
+	min-height:55px;
+	padding-right: 16px;
+	overflow: hidden;
+}
+
+/* Collect.js inserts each field as a 100% wide iframe with the browser's default border and resizes
+   its height from inside the iframe, so keep it within the field's border. */
+.wc-block-nmi-gateway-container .wc-block-gateway-container {
+	min-width: 0;
+}
+.wc-block-nmi-gateway-container .wc-block-gateway-input iframe {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+	max-height: 100%;
+	border: 0;
+}
+.wc-block-nmi-gateway-container .wc-block-nmi-preview-input {
+	display: flex;
+	align-items: center;
+	color: #757575;
+}
+
+/* Wider expiry date than WooCommerce's default (15em / 7em / 7em), taken from the card number,
+   when the card fields share one row. Narrower checkouts keep WooCommerce's stacked layout. */
+@container (min-width: 520px) {
+	.wc-block-nmi-gateway-container .wc-block-gateway-container.wc-card-number-element {
+		flex-basis: 12em;
+		min-width: min(12em, 50%);
+	}
+	.wc-block-nmi-gateway-container .wc-block-gateway-container.wc-card-expiry-element {
+		flex-basis: 10em;
+		min-width: min(10em, 30% - 12px);
+	}
 }

@@ -30,12 +30,41 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 	}
 
 	/**
+	 * Card gateway instance, looked up once per request.
+	 *
+	 * @var WC_Gateway_NMI|false|null
+	 */
+	private $card_gateway = null;
+
+	/**
+	 * Cached JS configuration from the card gateway.
+	 *
+	 * @var array|null
+	 */
+	private $js_params = null;
+
+	/**
+	 * Get the card gateway, which holds the API keys and settings, even when it is disabled.
+	 *
+	 * @return WC_Gateway_NMI|null
+	 */
+	private function get_card_gateway() {
+		if ( null === $this->card_gateway ) {
+			$gateways           = WC()->payment_gateways->payment_gateways();
+			$this->card_gateway = $gateways['nmi'] ?? false;
+		}
+		return $this->card_gateway ?: null;
+	}
+
+	/**
 	 * Returns if this payment method should be active. If false, the scripts will not be enqueued.
 	 *
 	 * @return boolean
 	 */
 	public function is_active() {
-		return ! empty( $this->settings['enabled'] ) && 'yes' === $this->settings['enabled'] && ! empty( $this->settings['public_key'] );
+		$legacy_auth = class_exists( 'WC_Gateway_NMI' ) ? WC_Gateway_NMI::settings_use_legacy_auth( $this->settings ) : ( isset( $this->settings['api_keys'] ) && 'no' === $this->settings['api_keys'] );
+
+		return ! empty( $this->settings['enabled'] ) && 'yes' === $this->settings['enabled'] && ! empty( $this->settings['public_key'] ) && ! empty( $this->settings['private_key'] ) && ! $legacy_auth;
 	}
 
 	/**
@@ -61,13 +90,15 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 		$js_params = $this->get_gateway_javascript_params();
 
 		if( ! empty( $js_params['public_key'] ) ) {
-			$gateways = WC()->payment_gateways->get_available_payment_gateways();
+			$card_gateway = $this->get_card_gateway();
 
-			if ( isset( $gateways['nmi'] ) ) {
-				$collect_js_url = $gateways['nmi']->testmode ? 'https://sandbox.nmi.com/token/Collect.js' : 'https://secure.nmi.com/token/Collect.js';
+			if ( $card_gateway ) {
+				$collect_js_url = $card_gateway->testmode ? 'https://sandbox.nmi.com/token/Collect.js' : 'https://secure.nmi.com/token/Collect.js';
 				wp_register_script( 'nmi-collect-js', $collect_js_url, '', null, true );
+				add_filter( 'script_loader_tag', [ __CLASS__, 'add_tokenization_key_to_collect_js' ], 20, 2 );
+
+				$dependencies = array_merge( [ 'nmi-collect-js' ], $dependencies );
 			}
-			$dependencies = array_merge( [ 'nmi-collect-js' ], $dependencies );
 		}
 
 		wp_enqueue_style(
@@ -92,6 +123,30 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 		return [ 'wc-nmi-blocks-integration' ];
 	}
 
+	/**
+	 * Add the tokenization key to the Collect.js script tag.
+	 *
+	 * The gateway class only adds it on the page set as the checkout page in WooCommerce
+	 * settings, so a checkout block on any other page would load Collect.js without a key.
+	 *
+	 * @param string $tag    Script tag.
+	 * @param string $handle Script handle.
+	 *
+	 * @return string
+	 */
+	public static function add_tokenization_key_to_collect_js( $tag, $handle ) {
+		if ( 'nmi-collect-js' !== $handle || false !== strpos( $tag, 'data-tokenization-key' ) ) {
+			return $tag;
+		}
+
+		$settings = get_option( 'woocommerce_nmi_settings', [] );
+		if ( empty( $settings['public_key'] ) ) {
+			return $tag;
+		}
+
+		return str_replace( ' src', ' data-tokenization-key="' . esc_attr( $settings['public_key'] ) . '" src', $tag );
+	}
+
 
 	/**
 	 * Returns an array of key=>value pairs of data made available to the payment methods script.
@@ -111,6 +166,8 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 				'showSavedCards'                 => $this->get_show_saved_cards(),
 				'showSaveOption'                 => $this->get_show_save_option(),
 				'isAdmin'                        => is_admin(),
+				// Logs Collect.js responses to the browser console, when Gateway Debug is on.
+				'debug'                          => $this->is_debug_enabled(),
 			]
 		);
 	}
@@ -121,17 +178,31 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 	 * @return array  the JS configuration from the NMI Payment Gateway.
 	 */
 	private function get_gateway_javascript_params() {
-		$js_configuration = [];
-
-		$gateways = WC()->payment_gateways->get_available_payment_gateways();
-		if ( isset( $gateways['nmi'] ) ) {
-			$js_configuration = $gateways['nmi']->javascript_params();
+		if ( null !== $this->js_params ) {
+			return $this->js_params;
 		}
 
-		return apply_filters(
+		$js_configuration = [];
+		$card_gateway     = $this->get_card_gateway();
+		if ( $card_gateway ) {
+			$js_configuration = $card_gateway->javascript_params();
+		}
+
+		$this->js_params = apply_filters(
 			'wc_nmi_params',
 			$js_configuration
 		);
+
+		return $this->js_params;
+	}
+
+	/**
+	 * Whether Gateway Debug (logging and debugging) is on in the gateway settings.
+	 *
+	 * @return bool
+	 */
+	private function is_debug_enabled() {
+		return ! empty( $this->settings['logging'] ) && 'yes' === $this->settings['logging'] && ! empty( $this->settings['debugging'] ) && 'yes' === $this->settings['debugging'];
 	}
 
 	/**
@@ -169,43 +240,26 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 	 * @return array Arrays of icons metadata.
 	 */
 	private function get_icons() {
-		$allowed_card_types = $this->settings['allowed_card_types'];
-		if( in_array( 'visa', $allowed_card_types ) ) {
-			$icons_src['visa'] = [
-				'src' => WC_HTTPS::force_https_url( WC()->plugin_url() . '/assets/images/icons/credit-cards/visa.svg' ),
-				'alt' => __( 'Visa', 'wc-nmi' ),
-			];
-		}
-		if( in_array( 'mastercard', $allowed_card_types ) ) {
-			$icons_src['mastercard'] = [
-				'src' => WC_HTTPS::force_https_url( WC()->plugin_url() . '/assets/images/icons/credit-cards/mastercard.svg' ),
-				'alt' => __( 'Mastercard', 'wc-nmi' ),
-			];
-		}
-		if( in_array( 'amex', $allowed_card_types ) ) {
-			$icons_src['amex'] = [
-				'src' => WC_HTTPS::force_https_url( WC()->plugin_url() . '/assets/images/icons/credit-cards/amex.svg' ),
-				'alt' => __( 'American Express', 'wc-nmi' ),
-			];
-		}
+		// Same default as the gateway's allowed_card_types setting, for when the settings were never saved.
+		$allowed_card_types = (array) ( $this->settings['allowed_card_types'] ?? [ 'visa', 'mastercard', 'discover', 'amex' ] );
 
-		if ( 'USD' === get_woocommerce_currency() ) {
-			if( in_array( 'discover', $allowed_card_types ) ) {
-				$icons_src['discover'] = [
-					'src' => WC_HTTPS::force_https_url( WC()->plugin_url() . '/assets/images/icons/credit-cards/discover.svg' ),
-					'alt' => _x( 'Discover', 'Name of credit card', 'wc-nmi' ),
-				];
-			}
-			if( in_array( 'jcb', $allowed_card_types ) ) {
-				$icons_src['jcb']      = [
-					'src' => WC_HTTPS::force_https_url( WC()->plugin_url() . '/assets/images/icons/credit-cards/jcb.svg' ),
-					'alt' => __( 'JCB', 'wc-nmi' ),
-				];
-			}
-			if( in_array( 'diners-club', $allowed_card_types ) ) {
-				$icons_src['diners'] = [
-					'src' => WC_HTTPS::force_https_url( WC()->plugin_url() . '/assets/images/icons/credit-cards/diners.svg' ),
-					'alt' => __( 'Diners', 'wc-nmi' ),
+		// Same card types and order as WC_Gateway_NMI::get_icon() on the classic checkout.
+		$card_icons = [
+			'visa'        => [ 'id' => 'visa', 'file' => 'visa.svg', 'alt' => __( 'Visa', 'wc-nmi' ) ],
+			'mastercard'  => [ 'id' => 'mastercard', 'file' => 'mastercard.svg', 'alt' => __( 'Mastercard', 'wc-nmi' ) ],
+			'amex'        => [ 'id' => 'amex', 'file' => 'amex.svg', 'alt' => __( 'American Express', 'wc-nmi' ) ],
+			'discover'    => [ 'id' => 'discover', 'file' => 'discover.svg', 'alt' => _x( 'Discover', 'Name of credit card', 'wc-nmi' ) ],
+			'diners-club' => [ 'id' => 'diners', 'file' => 'diners.svg', 'alt' => __( 'Diners Club', 'wc-nmi' ) ],
+			'jcb'         => [ 'id' => 'jcb', 'file' => 'jcb.svg', 'alt' => __( 'JCB', 'wc-nmi' ) ],
+			'maestro'     => [ 'id' => 'maestro', 'file' => 'maestro.svg', 'alt' => __( 'Maestro', 'wc-nmi' ) ],
+		];
+
+		$icons_src = [];
+		foreach ( $card_icons as $card_type => $icon ) {
+			if ( in_array( $card_type, $allowed_card_types, true ) ) {
+				$icons_src[ $icon['id'] ] = [
+					'src' => WC_HTTPS::force_https_url( WC()->plugin_url() . '/assets/images/icons/credit-cards/' . $icon['file'] ),
+					'alt' => $icon['alt'],
 				];
 			}
 		}
@@ -218,9 +272,8 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 	 * @return string[]
 	 */
 	public function get_supported_features() {
-		$gateways = WC()->payment_gateways->get_available_payment_gateways();
-		if ( isset( $gateways['nmi'] ) ) {
-			$gateway = $gateways['nmi'];
+		$gateway = $this->get_card_gateway();
+		if ( $gateway ) {
 			return array_filter( $gateway->supports, [ $gateway, 'supports' ] );
 		}
 		return [];

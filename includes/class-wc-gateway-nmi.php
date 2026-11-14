@@ -7,26 +7,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * WC_Gateway_NMI class.
  *
- * @extends WC_Payment_Gateway_CC
+ * @extends WC_Payment_Gateway
  */
+
 class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
 	public $testmode;
-	public $api_keys;
 	public $capture;
 	public $capture_on_status_change;
 	public $private_key;
 	public $public_key;
-	public $username;
-	public $password;
 	public $logging;
 	public $debugging;
 	public $line_items;
 	public $allowed_card_types;
 	public $customer_receipt;
 
-    const NMI_REQUEST_URL_LIVE = 'https://secure.nmi.com/api/transact.php';
-    const NMI_REQUEST_URL_SANDBOX = 'https://sandbox.nmi.com/api/transact.php';
+	/**
+	 * Whether the saved settings still use the old gateway username/password ("api_keys" off), which v5 doesn't accept.
+	 *
+	 * @var bool
+	 */
+	public $legacy_auth = false;
+
+	/**
+	 * Apple Pay / Google Pay payment being processed through process_wallet_payment().
+	 *
+	 * @var WCAPGP_Wallet_Payment|null
+	 */
+	private $wallet_payment = null;
+
+	const NMI_REQUEST_URL_LIVE    = 'https://secure.nmi.com/api/v5/payments/';
+	const NMI_REQUEST_URL_SANDBOX = 'https://sandbox.nmi.com/api/v5/payments/';
 
 	/**
 	 * Constructor
@@ -49,18 +61,17 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		// Load the settings.
 		$this->init_settings();
 
+		$this->legacy_auth = self::settings_use_legacy_auth( $this->settings );
+
 		// Get setting values.
 		$this->title       		  		= $this->get_option( 'title' );
 		$this->description 		  		= $this->get_option( 'description' );
 		$this->enabled     		  		= $this->get_option( 'enabled' );
 		$this->testmode    		  		= $this->get_option( 'testmode' ) === 'yes';
-		$this->api_keys    		  		= $this->get_option( 'api_keys' ) === 'yes';
 		$this->capture     		  		= $this->get_option( 'capture', 'yes' ) === 'yes';
 		$this->capture_on_status_change = $this->get_option( 'capture_on_status_change', 'yes' ) === 'yes';
 		$this->private_key	   			= $this->get_option( 'private_key' );
 		$this->public_key	   			= $this->get_option( 'public_key' );
-		$this->username	   		  		= $this->get_option( 'username' );
-		$this->password	   		  		= $this->get_option( 'password' );
 		$this->logging     		  		= $this->get_option( 'logging' ) === 'yes';
 		$this->debugging   		  		= $this->get_option( 'debugging' ) === 'yes';
 		$this->line_items  		  		= $this->get_option( 'line_items' ) === 'yes';
@@ -68,13 +79,12 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		$this->customer_receipt   		= $this->get_option( 'customer_receipt' ) === 'yes';
 
 		if ( $this->testmode ) {
-			$this->description .= ' ' . sprintf( __( '<br /><br /><strong>TEST MODE ENABLED</strong><br /> In test mode, you can use the card number 4111111111111111 with any CVC and a valid expiration date or check the documentation "<a href="%s">NMI Direct Post API</a>" for more card numbers.', 'wc-nmi' ), 'https://secure.nmi.com/merchants/resources/integration/download.php?document=directpost' );
+			$this->description .= ' ' . sprintf( __( '<br /><br /><strong>SANDBOX MODE ENABLED</strong><br /> In sandbox mode, you can use the card number 4111111111111111 with any CVC and a valid expiration date or check <a href="%s">NMI\'s testing documentation</a> for more card numbers.', 'wc-nmi' ), 'https://docs.nmi.com/reference/testing-methods' );
 			$this->description  = trim( $this->description );
 		}
 
 		// Hooks
         add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
-		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
 	}
 
@@ -111,6 +121,17 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	}
 
 	/**
+	 * Shows the admin notices of the registered gateway, which has the latest settings
+	 * (WooCommerce re-creates its gateways after the settings are saved).
+	 */
+	public static function display_admin_notices() {
+		$gateways = WC()->payment_gateways() ? WC()->payment_gateways()->payment_gateways() : array();
+		if ( isset( $gateways['nmi'] ) && $gateways['nmi'] instanceof self ) {
+			$gateways['nmi']->admin_notices();
+		}
+	}
+
+	/**
 	 * Check if SSL is enabled and notify the user
 	 */
 	public function admin_notices() {
@@ -118,26 +139,15 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			return;
 		}
 
-		// Check required fields
-		if ( ! $this->api_keys && ! $this->username ) {
-			echo '<div class="error"><p>' . sprintf( __( 'NMI error: Please enter your Username <a href="%s">here</a>', 'wc-nmi' ), admin_url( 'admin.php?page=wc-settings&tab=checkout&section=nmi' ) ) . '</p></div>';
-			return;
-
-		} elseif ( ! $this->api_keys && ! $this->password ) {
-			echo '<div class="error"><p>' . sprintf( __( 'NMI error: Please enter your Password <a href="%s">here</a>', 'wc-nmi' ), admin_url( 'admin.php?page=wc-settings&tab=checkout&section=nmi' ) ) . '</p></div>';
-			return;
-		}
-
-        if ( $this->api_keys && ! $this->private_key ) {
+		// Check required fields. Sites on the old username/password are covered by the legacy auth notice of the main plugin.
+		if ( ! $this->legacy_auth && ! $this->private_key ) {
 			echo '<div class="error"><p>' . sprintf( __( 'NMI error: Please enter your Private Key <a href="%s">here</a>', 'wc-nmi' ), admin_url( 'admin.php?page=wc-settings&tab=checkout&section=nmi' ) ) . '</p></div>';
 			return;
-
 		}
 
-		// Simple check for duplicate keys
-		if ( ! $this->api_keys && $this->username == $this->password ) {
-			echo '<div class="error"><p>' . sprintf( __( 'NMI error: Your Username and Password match. Please check and re-enter.', 'wc-nmi' ), admin_url( 'admin.php?page=wc-settings&tab=checkout&section=nmi' ) ) . '</p></div>';
-			return;
+		// Without a Public Tokenization Key the card fields post through this server (Direct Post).
+		if ( ! $this->public_key ) {
+			echo '<div class="notice notice-warning"><p>' . sprintf( __( 'NMI is using Direct Post because no Public Tokenization Key is set, so card numbers are sent through your server. This increases your PCI compliance scope. Please add a Public Tokenization Key <a href="%s">here</a> to use Collect.js instead.', 'wc-nmi' ), admin_url( 'admin.php?page=wc-settings&tab=checkout&section=nmi' ) ) . '</p></div>';
 		}
 
 		// Show message if enabled and FORCE SSL is disabled and WordpressHTTPS plugin is not detected
@@ -157,33 +167,10 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
                  * Object to handle NMI admin functions.
                  */
                 let wc_nmi_admin = {
-                    isAPIKey: function() {
-                        return $( '#woocommerce_nmi_api_keys' ).is( ':checked' );
-                    },
-
                     /**
                      * Initialize.
                      */
                     init: function() {
-                        $( document.body ).on( 'change', '#woocommerce_nmi_api_keys', function() {
-                           let field_username = $( '#woocommerce_nmi_username' ).parents( 'tr' ).eq( 0 ),
-					           field_password = $( '#woocommerce_nmi_password' ).parents( 'tr' ).eq( 0 ),
-					           field_private_key = $( '#woocommerce_nmi_private_key' ).parents( 'tr' ).eq( 0 ),
-					           field_public_key = $( '#woocommerce_nmi_public_key' ).parents( 'tr' ).eq( 0 );
-
-                            if ( $( this ).is( ':checked' ) ) {
-                                field_private_key.show();
-                                field_public_key.show();
-                                field_username.hide();
-                                field_password.hide();
-                            } else {
-                                field_private_key.hide();
-                                field_public_key.hide();
-                                field_username.show();
-                                field_password.show();
-                            }
-                        } );
-
 						$( document.body ).on( 'change', '#woocommerce_nmi_capture', function() {
                             let field_capture_on_status_change = $( '#woocommerce_nmi_capture_on_status_change' ).parents( 'tr' ).eq( 0 );
                             if ( $( this ).is( ':checked' ) ) {
@@ -193,7 +180,6 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
                             }
                         });
 
-                        $( '#woocommerce_nmi_api_keys' ).change();
 						$( '#woocommerce_nmi_capture' ).change();
                     }
                 };
@@ -212,17 +198,44 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			if ( is_add_payment_method_page() ) {
 				return false;
 			}
-			// Required fields check
-			if ( ! $this->api_keys && ( ! $this->username || ! $this->password ) ) {
-				return false;
-			}
-
-            if ( $this->api_keys && ! $this->private_key ) {
-				return false;
-			}
-			return true;
+			return $this->is_configured();
 		}
 		return parent::is_available();
+	}
+
+	/**
+	 * Whether NMI can take payments: a private key is set and the settings no longer use the old username/password.
+	 *
+	 * @return bool
+	 */
+	public function is_configured() {
+		return ! empty( $this->private_key ) && ! $this->legacy_auth;
+	}
+
+	/**
+	 * Whether these saved settings use the old gateway username/password ("api_keys" off), which NMI's v5 API doesn't accept.
+	 *
+	 * @param mixed $settings Saved gateway settings.
+	 * @return bool
+	 */
+	public static function settings_use_legacy_auth( $settings ) {
+		return is_array( $settings ) && isset( $settings['api_keys'] ) && 'no' === $settings['api_keys'];
+	}
+
+	/**
+	 * Save the settings. Once a private key is saved, the old username/password settings are deleted
+	 * and the site is no longer locked.
+	 */
+	public function process_admin_options() {
+		$saved = parent::process_admin_options();
+
+		if ( ! empty( $this->settings['private_key'] ) && ( isset( $this->settings['api_keys'] ) || isset( $this->settings['username'] ) || isset( $this->settings['password'] ) ) ) {
+			unset( $this->settings['api_keys'], $this->settings['username'], $this->settings['password'] );
+			update_option( $this->get_option_key(), $this->settings );
+			$this->legacy_auth = false;
+		}
+
+		return $saved;
 	}
 
 	/**
@@ -256,35 +269,16 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 				'description' => __( '<strong>NOTE: Sandbox mode is not the same as Test mode.</strong> If your login URL says <code>sandbox.nmi.com</code>, check this option. If it says <code>secure.nmi.com</code> leave the option unchecked, even if it is a test account, and no live payments will take place.', 'wc-nmi' ),
 				'default'     => 'yes'
 			),
-			'api_keys' => array(
-				'title'       => __( 'API Keys', 'wc-nmi' ),
-				'label'       => __( 'Enable Authentication via API keys instead of login credentials.', 'wc-nmi' ),
-				'type'        => 'checkbox',
-				'description' => __( 'RECOMMENDED! This ensures you are using the most updated API method. If you disable this, the plugin will process via a legacy method and will need you to enter your login username and password.', 'wc-nmi' ),
-				'default'     => 'yes'
-			),
             'private_key' => array(
 				'title'       => __( 'Private Key', 'wc-nmi' ),
 				'type'        => 'password',
-				'description' => __( 'Used for authenticating transactions. Make sure the private key you enter here has "API" permission enabled.', 'wc-nmi' ),
+				'description' => __( 'Required. Used for authenticating all transactions. Find or create it in your NMI account under Settings > Security Keys, and make sure it has "API" permission enabled.', 'wc-nmi' ),
 				'default'     => ''
 			),
             'public_key' => array(
 				'title'       => __( 'Public Tokenization Key', 'wc-nmi' ),
 				'type'        => 'text',
-				'description' => __( 'Used for Collect.js tokenization for PCI compliance. Leave it empty ONLY if you are facing Javascript issues at checkout and the plugin will default to Direct Post method.', 'wc-nmi' ),
-				'default'     => ''
-			),
-			'username' => array(
-				'title'       => __( 'Gateway Username', 'wc-nmi' ),
-				'type'        => 'text',
-				'description' => __( 'Legacy API method. Enter your NMI account username.', 'wc-nmi' ),
-				'default'     => ''
-			),
-			'password' => array(
-				'title'       => __( 'Gateway Password', 'wc-nmi' ),
-				'type'        => 'password',
-				'description' => __( 'Legacy API method. Enter your NMI account password.', 'wc-nmi' ),
+				'description' => __( 'Used for Collect.js tokenization for PCI compliance. Leave it empty ONLY if you are facing Javascript issues at checkout. Without it, the card fields post through your server (Direct Post).', 'wc-nmi' ),
 				'default'     => ''
 			),
 			'capture' => array(
@@ -312,7 +306,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 				'title'       => __( 'Gateway Debug', 'wc-nmi' ),
 				'label'       => __( 'Log gateway requests and response to the WooCommerce System Status log.', 'wc-nmi' ),
 				'type'        => 'checkbox',
-				'description' => __( '<strong>CAUTION! Enabling this option will write gateway requests including card numbers and CVV to the logs.</strong> Do not turn this on unless you have a problem processing credit cards. You must only ever enable it temporarily for troubleshooting or to send requested information to the plugin author. It must be disabled straight away after the issues are resolved and the plugin logs should be deleted.', 'wc-nmi' ) . ' ' . sprintf( __( '<a target="_blank" href="%s">Click here</a> to check and delete the full log file.', 'wc-nmi' ), esc_url( self::get_log_url() ) ),
+				'description' => __( '<strong>CAUTION! Enabling this option will write full gateway requests and responses to the logs, including customer names, addresses and email addresses. Card numbers are masked to the last 4 digits and the CVV is hidden.</strong> Do not turn this on unless you have a problem processing credit cards. You must only ever enable it temporarily for troubleshooting or to send requested information to the plugin author. It must be disabled straight away after the issues are resolved and the plugin logs should be deleted.', 'wc-nmi' ) . ' ' . sprintf( __( '<a target="_blank" href="%s">Click here</a> to check and delete the full log file.', 'wc-nmi' ), esc_url( self::get_log_url() ) ),
 				'default'     => 'no'
 			),
 			'line_items' => array(
@@ -358,7 +352,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			echo apply_filters( 'wc_nmi_description', wpautop( wp_kses_post( $this->description ) ) );
 		}
 
-		if( $this->api_keys && $this->public_key ) {
+		if( $this->public_key ) {
             $this->collect_js_form();
         } else {
             $this->form();
@@ -371,8 +365,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		?>
 		<fieldset id="wc-<?php echo esc_attr( $this->id ); ?>-cc-form" class="wc-credit-card-form wc-payment-form" style="background:transparent;">
 			<?php do_action( 'woocommerce_credit_card_form_start', $this->id ); ?>
-
-			<!-- Used to display form errors -->
+            <!-- Used to display form errors -->
             <div class="nmi-source-errors" role="alert"></div>
 
             <div class="form-row form-row-wide">
@@ -409,11 +402,21 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	}
 
     public function payment_scripts() {
-		if ( ! $this->api_keys || ! $this->public_key || ( ! is_cart() && ! is_checkout() && ! isset( $_GET['pay_for_order'] ) && ! is_add_payment_method_page() ) ) {
+		add_filter( 'script_loader_tag', array( $this, 'add_public_key_to_js' ), 10, 2 );
+
+		if ( ! $this->public_key || ( ! is_checkout() && ! isset( $_GET['pay_for_order'] ) && ! is_add_payment_method_page() ) ) {
 			return;
 		}
 
-        add_filter( 'script_loader_tag', array( $this, 'add_public_key_to_js' ), 10, 2 );
+		// is_checkout() is true on the order received page too, where there's nothing to pay.
+		if ( is_order_received_page() ) {
+			return;
+		}
+
+		// The checkout block loads its own scripts (WC_NMI_Blocks_Support).
+		if ( self::is_block_checkout_page() ) {
+			return;
+		}
 
 		$collect_js_url = $this->testmode ? 'https://sandbox.nmi.com/token/Collect.js' : 'https://secure.nmi.com/token/Collect.js';
 		wp_enqueue_script( 'nmi-collect-js', $collect_js_url, '', null, true );
@@ -441,6 +444,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			'timeout_error' 		=> __( 'The tokenization did not respond in the expected timeframe. Please make sure the fields are correctly filled in and submit the form again.', 'wc-nmi' ),
 			'collect_js_error' 		=> __( 'Collect.js could not be loaded. Please try a different payment method or contact the administrator.', 'wc-nmi' ),
 		);
+		$nmi_params['debug']       = $this->logging && $this->debugging;
 		$nmi_params['is_checkout'] = ( is_checkout() && empty( $_GET['pay_for_order'] ) ) ? 'yes' : 'no'; // wpcs: csrf ok.
 
 		return $nmi_params;
@@ -448,136 +452,249 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
     public function add_public_key_to_js( $tag, $handle ) {
        if ( 'nmi-collect-js' !== $handle ) return $tag;
-       return str_replace( ' src', ' data-tokenization-key="' . $this->public_key . '" src', $tag );
+       return str_replace( ' src', ' data-tokenization-key="' . esc_attr( $this->public_key ) . '" src', $tag );
     }
 
-    public function get_nmi_js_response() {
-        if( !isset( $_POST['nmi_js_response'] ) ) {
-            return false;
-        }
+	/**
+	 * The Collect.js response posted by the checkout, or false.
+	 *
+	 * The classic checkout posts every payment method's fields, so a token from the NMI card fields can be present
+	 * when the customer pays with Apple Pay / Google Pay. The wallet payment takes priority.
+	 *
+	 * @return array|false
+	 */
+	public function get_nmi_js_response() {
+		if ( ! isset( $_POST['nmi_js_response'] ) || $this->get_posted_wallet_payment_details() ) {
+			return false;
+		}
 		$response = json_decode( wc_clean( wp_unslash( $_POST['nmi_js_response'] ) ), 1 );
+		if ( ! is_array( $response ) ) {
+			return false;
+		}
+		// Collect.js sometimes returns the card under lookupData only.
+		if ( empty( $response['card'] ) && ! empty( $response['lookupData']['card'] ) ) {
+			$response['card'] = $response['lookupData']['card'];
+		}
 		return $response;
+	}
+
+	/**
+	 * Apple Pay / Google Pay payment data posted by the WooCommerce Apple Pay and Google Pay extension,
+	 * as NMI payment_details, or null when the payment isn't a wallet payment.
+	 *
+	 * @return array|null
+	 */
+	public function get_posted_wallet_payment_details() {
+		if ( $this->wallet_payment ) {
+			$key = $this->wallet_payment->is_apple_pay() ? 'applepay_payment_data' : 'googlepay_payment_data';
+			return array( $key => $this->wallet_payment->get_decoded_token() );
+		}
+		if ( ! empty( $_POST['wcapgp_google_pay_payment_data'] ) ) {
+			return array( 'googlepay_payment_data' => base64_decode( wc_clean( wp_unslash( $_POST['wcapgp_google_pay_payment_data'] ) ) ) );
+		}
+		if ( ! empty( $_POST['wcapgp_apple_pay_payment_data'] ) ) {
+			return array( 'applepay_payment_data' => base64_decode( wc_clean( wp_unslash( $_POST['wcapgp_apple_pay_payment_data'] ) ) ) );
+		}
+		return null;
+	}
+
+	/**
+	 * Processes a payment made with the WooCommerce Apple Pay and Google Pay extension.
+	 *
+	 * @param WCAPGP_Wallet_Payment $payment  Wallet payment.
+	 * @param int                   $order_id Order ID.
+	 * @param bool                  $retry    Unused; the extension's processor contract passes it.
+	 * @return array
+	 */
+	public function process_wallet_payment( $payment, $order_id, $retry = true ) {
+		$this->wallet_payment = $payment;
+
+		try {
+			return $this->process_payment( $order_id );
+		} finally {
+			$this->wallet_payment = null;
+		}
 	}
 
 	/**
 	 * Process the payment
 	 */
-	public function process_payment( $order_id, $retry = true ) {
+	public function process_payment( $order_id ) {
 
-        $order		= wc_get_order( $order_id );
+		$order = wc_get_order( $order_id );
 
 		$this->log( "Info: Beginning processing payment for order $order_id for the amount of {$order->get_total()}" );
 
 		$response = false;
 
-		// Use NMI CURL API for payment
 		try {
-			$post_data = array();
+			if ( $wallet_payment_details = $this->get_posted_wallet_payment_details() ) {
+				// Apple Pay / Google Pay: the card details come from NMI's response.
+				$payment_details = $wallet_payment_details;
 
-			if( ! $this->get_nmi_js_response() && empty( $_POST['wcapgp_google_pay_payment_data'] ) && empty( $_POST['wcapgp_apple_pay_payment_data'] ) ) {
+			} elseif ( $js_response = $this->get_nmi_js_response() ) {
+				$this->validate_js_card_type( $js_response );
 
-				// Check for CC details filled or not
-				if( empty( $_POST['nmi-card-number'] ) || empty( $_POST['nmi-card-expiry'] ) || empty( $_POST['nmi-card-cvc'] ) ) {
+				$payment_details = array( 'payment_token' => $js_response['token'] ?? '' );
+
+				if ( ! empty( $js_response['card']['number'] ) ) {
+					$card_last4 = substr( $js_response['card']['number'], -4 );
+					$card_type  = $this->get_js_card_type( $js_response );
+				}
+
+			} else {
+				// Direct Post: card fields on the page when there's no Public Tokenization Key.
+				if ( empty( $_POST['nmi-card-number'] ) || empty( $_POST['nmi-card-expiry'] ) || empty( $_POST['nmi-card-cvc'] ) ) {
 					throw new Exception( __( 'Credit card details cannot be left incomplete.', 'wc-nmi' ) );
 				}
 
+				$card_number = str_replace( ' ', '', wc_clean( $_POST['nmi-card-number'] ) );
+				$card_type   = $this->get_card_type( $card_number, 'pattern', 'name' );
+
 				// Check for card type supported or not
-				if( ! in_array( $this->get_card_type( wc_clean( $_POST['nmi-card-number'] ), 'pattern', 'name' ), $this->allowed_card_types ) ) {
-					$this->log( sprintf( __( 'Card type being used is not one of supported types in plugin settings: %s', 'wc-nmi' ), $this->get_card_type( wc_clean( $_POST['nmi-card-number'] ) ) ) );
+				if ( ! in_array( $card_type, $this->allowed_card_types ) ) {
+					$this->log( sprintf( __( 'Card type being used is not one of supported types in plugin settings: %s', 'wc-nmi' ), $card_type ) );
 					throw new Exception( __( 'Card Type Not Accepted', 'wc-nmi' ) );
 				}
-			}
 
-			if( $js_response = $this->get_nmi_js_response() ) {
-				$post_data['payment_token'] = $js_response['token'];
-			} elseif( isset( $_POST['wcapgp_google_pay_payment_data'] ) ) {
-				$post_data['googlepay_payment_data'] = base64_decode( wc_clean( $_POST['wcapgp_google_pay_payment_data'] ) );
-			} elseif( isset( $_POST['wcapgp_apple_pay_payment_data'] ) ) {
-				$post_data['applepay_payment_data'] = base64_decode( wc_clean( $_POST['wcapgp_apple_pay_payment_data'] ) );
-			} else {
-				$expiry = explode( ' / ', wc_clean( $_POST['nmi-card-expiry'] ) );
-				$expiry[1] = substr( $expiry[1], -2 );
-				$post_data['ccnumber']	= wc_clean( $_POST['nmi-card-number'] );
-				$post_data['ccexp']		= $expiry[0] . $expiry[1];
-				$post_data['cvv']		= wc_clean( $_POST['nmi-card-cvc'] );
+				$expiry     = $this->parse_card_expiry( wc_clean( $_POST['nmi-card-expiry'] ) );
+				$card_last4 = substr( $card_number, -4 );
+
+				$payment_details = array(
+					'card_number' => $card_number,
+					'card_exp'    => $expiry[0] . $expiry[1],
+					'card_cvv'    => wc_clean( $_POST['nmi-card-cvc'] ),
+				);
 			}
 
 			$description = sprintf( __( '%s - Order %s', 'wc-nmi' ), wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ), $order->get_order_number() );
 
-			if( $this->line_items ) {
+			if ( $this->line_items ) {
 				$description .= ' (' . $this->get_line_items( $order ) . ')';
 			}
 
 			$payment_args = array(
-				'orderid'	 		=> $order->get_order_number(),
-				'order_description'	=> $description,
-				'amount'			=> $order->get_total(),
-				'transactionid'		=> $order->get_transaction_id(),
-				'type'				=> $this->capture ? 'sale' : 'auth',
-				'first_name'		=> $order->get_billing_first_name(),
-				'last_name'			=> $order->get_billing_last_name(),
-				'address1'			=> $order->get_billing_address_1(),
-				'address2'			=> $order->get_billing_address_2(),
-				'city'				=> $order->get_billing_city(),
-				'state'				=> $order->get_billing_state(),
-				'country'			=> $order->get_billing_country(),
-				'zip'				=> $order->get_billing_postcode(),
-				'email' 			=> $order->get_billing_email(),
-				'phone'				=> $order->get_billing_phone(),
-				'company'			=> $order->get_billing_company(),
-				'currency'			=> $this->get_payment_currency( $order_id ),
+				'amount'             => $order->get_total(),
+				'currency'           => $this->get_payment_currency( $order_id ),
+				'customer_receipt'   => (bool) $this->customer_receipt,
+				'industry'           => 'ecommerce',
+				'payment_details'    => $payment_details,
+				'order_details'      => array(
+					'order_description' => $description,
+					'id'                => $order->get_order_number(),
+					'tax'               => $order->get_total_tax(),
+					'shipping'          => $order->get_shipping_total(),
+					'ip_address'        => WC_Geolocation::get_ip_address(),
+				),
+				'billing_address'    => array(
+					'first_name' => $order->get_billing_first_name(),
+					'last_name'  => $order->get_billing_last_name(),
+					'address1'   => $order->get_billing_address_1(),
+					'address2'   => $order->get_billing_address_2(),
+					'city'       => $order->get_billing_city(),
+					'state'      => $order->get_billing_state(),
+					'country'    => $order->get_billing_country(),
+					'zip'        => $order->get_billing_postcode(),
+					'email'      => $order->get_billing_email(),
+					'phone'      => $order->get_billing_phone(),
+					'company'    => $order->get_billing_company(),
+				),
 			);
 
-			$payment_args = array_merge( $payment_args, $post_data );
+			// Shipping address fields, only those the order has.
+			$shipping_address = array_filter( array(
+				'first_name' => $order->get_shipping_first_name(),
+				'last_name'  => $order->get_shipping_last_name(),
+				'company'    => $order->get_shipping_company(),
+				'address1'   => $order->get_shipping_address_1(),
+				'address2'   => $order->get_shipping_address_2(),
+				'city'       => $order->get_shipping_city(),
+				'state'      => $order->get_shipping_state(),
+				'country'    => $order->get_shipping_country(),
+				'zip'        => $order->get_shipping_postcode(),
+			) );
+			if ( $shipping_address ) {
+				$payment_args['shipping_address'] = $shipping_address;
+			}
 
-			$payment_args = apply_filters( 'wc_nmi_request_args', $payment_args, $order );
+			$trans_type = $this->capture ? 'sale' : 'auth';
 
-			$response = $this->nmi_request( $payment_args );
+			$payment_args = apply_filters( 'wc_nmi_v5_request_args', $payment_args, $order, $trans_type );
+
+			$response = $this->nmi_request( "POST:{$trans_type}", $payment_args );
 
 			if ( is_wp_error( $response ) ) {
 				throw new Exception( $response->get_error_message() );
 			}
 
-			// Store charge ID
-			$order->update_meta_data( '_nmi_charge_id', $response['transactionid'] );
-			$order->update_meta_data( '_nmi_authorization_code', $response['authcode'] );
+			if ( empty( $response['id'] ) || ! isset( $response['response'] ) || (int) $response['response'] !== 1 ) {
+				throw new Exception( __( 'There was an error with the gateway response.', 'wc-nmi' ) );
+			}
 
-			if ( $response['response'] == 1 ) {
-				$order->set_transaction_id( $response['transactionid'] );
+			// NMI's response has the card that was charged: wallet payments have no card fields on the page, and the
+			// Collect.js card details are posted by the browser, so they can't be trusted.
+			if ( $response_card = $this->get_card_details_from_response( $response ) ) {
+				$card_last4 = $response_card['last4'];
+				$card_type  = '' !== $response_card['type'] ? $response_card['type'] : ( $card_type ?? '' );
+			}
 
-				if( $payment_args['type'] == 'sale' ) {
-
-					// Store captured value
-					$order->update_meta_data( '_nmi_charge_captured', 'yes' );
-					$order->update_meta_data( 'NMI Payment ID', $response['transactionid'] );
-
-					// Payment complete
-					$order->payment_complete( $response['transactionid'] );
-
-					// Add order note
-					$complete_message = sprintf( __( 'NMI charge completed (Charge ID: %s).', 'wc-nmi' ), $response['transactionid'] );
-					$order->add_order_note( $complete_message );
-					$this->log( "Success: $complete_message" );
-
-				} else {
-
-					// Store captured value
-					$order->update_meta_data( '_nmi_charge_captured', 'no' );
-
-					if ( $order->has_status( array( 'pending', 'failed' ) ) ) {
-						wc_reduce_stock_levels( $order_id );
-					}
-
-					// Mark as on-hold
-					$authorized_message = sprintf( __( 'NMI charge authorized (Charge ID: %s). Process order to take payment, or cancel to remove the pre-authorization.', 'wc-nmi' ), $response['transactionid'] );
-					$order->update_status( 'on-hold', $authorized_message . "\n" );
-					$this->log( "Success: $authorized_message" );
-
+			// A Collect.js token for a card type the store doesn't accept (e.g. with an edited card type in the posted
+			// response) is voided rather than kept.
+			$void_failed = false;
+			if ( ! empty( $js_response ) && ! empty( $response_card['type'] ) && ! in_array( $response_card['type'], $this->allowed_card_types, true ) ) {
+				if ( $this->void_disallowed_card_payment( $order, $response['id'], $response_card['type'] ) ) {
+					throw new Exception( __( 'Card Type Not Accepted', 'wc-nmi' ) );
 				}
+				// The shopper was charged: keep the charge on the order so it can be refunded, and hold it for review.
+				$void_failed = true;
+			}
 
+			// Store charge ID
+			$order->update_meta_data( '_nmi_charge_id', $response['id'] );
+			$order->update_meta_data( '_nmi_authorization_code', $response['auth_code'] ?? '' );
+			$order->update_meta_data( '_nmi_card_last4', $card_last4 ?? '' );
+			$order->update_meta_data( '_nmi_card_type', $card_type ?? '' );
+
+			$order->set_transaction_id( $response['id'] );
+
+			if ( $void_failed ) {
+
+				$order->update_meta_data( '_nmi_charge_captured', 'sale' === $trans_type ? 'yes' : 'no' );
+				$order->update_status( 'on-hold', sprintf( __( 'The card type is not accepted and NMI could not void the payment (Charge ID: %s). Please review this order and refund it if needed.', 'wc-nmi' ), $response['id'] ) );
+				$this->log( "Info: order {$order_id} put on hold, the payment of a disallowed card type could not be voided." );
+
+			} elseif ( 'sale' === $trans_type ) {
+
+				// Store captured value
+				$order->update_meta_data( '_nmi_charge_captured', 'yes' );
+				$order->update_meta_data( 'NMI Payment ID', $response['id'] );
 				$order->save();
 
+				// Payment complete
+				$order->payment_complete( $response['id'] );
+
+				// Add order note
+				$complete_message = sprintf( __( 'NMI charge completed for %s (Charge ID: %s).', 'wc-nmi' ), wc_price( $payment_args['amount'], array( 'currency' => $order->get_currency() ) ), $response['id'] );
+				$order->add_order_note( $complete_message );
+				$this->log( 'Success: ' . wp_strip_all_tags( $complete_message ) );
+
+			} else {
+
+				// Store captured value
+				$order->update_meta_data( '_nmi_charge_captured', 'no' );
+
+				if ( $order->has_status( array( 'pending', 'failed' ) ) ) {
+					wc_reduce_stock_levels( $order_id );
+				}
+
+				// Mark as on-hold
+				$authorized_message = sprintf( __( 'NMI charge authorized for %s (Charge ID: %s). Process order to take payment, or cancel to remove the pre-authorization.', 'wc-nmi' ), wc_price( $payment_args['amount'], array( 'currency' => $order->get_currency() ) ), $response['id'] );
+				$order->update_status( 'on-hold', $authorized_message . "\n" );
+				$this->log( 'Success: ' . wp_strip_all_tags( $authorized_message ) );
+
 			}
+
+			$order->save();
 
 			// Remove cart
 			WC()->cart->empty_cart();
@@ -587,18 +704,14 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 			// Return thank you page redirect
 			return array(
 				'result'   => 'success',
-				'redirect' => $this->get_return_url( $order )
+				'redirect' => $this->get_return_url( $order ),
 			);
 
 		} catch ( Exception $e ) {
 			wc_add_notice( sprintf( __( 'Gateway Error: %s', 'wc-nmi' ), $e->getMessage() ), 'error' );
 			$this->log( sprintf( __( 'Gateway Error: %s', 'wc-nmi' ), $e->getMessage() ) );
 
-			if( is_wp_error( $response ) && $response = $response->get_error_data() ) {
-				$order->add_order_note( sprintf( __( 'NMI failure reason: %s', 'wc-nmi' ), $response['response_code'] . ' - ' . $response['responsetext'] ) );
-            } else {
-				$order->add_order_note( sprintf( __( "NMI failure reason: %s", 'wc-nmi' ), $e->getMessage() ) );
-			}
+			$this->add_failure_order_note( $order, $response, $e );
 
 			do_action( 'wc_gateway_nmi_process_payment_error', $e, $order );
 
@@ -606,88 +719,300 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
 			return array(
 				'result'   => 'fail',
-				'redirect' => ''
+				'redirect' => '',
 			);
-
 		}
 	}
 
-	function nmi_request( $args ) {
+	/**
+	 * Void a payment NMI approved for a card type the store doesn't accept.
+	 *
+	 * @param WC_Order $order
+	 * @param string   $transaction_id
+	 * @param string   $card_type
+	 * @return bool Whether the payment was voided.
+	 */
+	protected function void_disallowed_card_payment( $order, $transaction_id, $card_type ) {
+		$this->log( sprintf( __( 'Card type being used is not one of supported types in plugin settings: %s', 'wc-nmi' ), $card_type ) );
+
+		$void = $this->nmi_request( "POST:{$transaction_id}/void" );
+
+		if ( is_wp_error( $void ) || empty( $void['id'] ) ) {
+			$reason = is_wp_error( $void ) ? $void->get_error_message() : __( 'There was an error with the gateway response.', 'wc-nmi' );
+			$order->add_order_note( sprintf( __( 'NMI approved a %1$s card, which is not an accepted card type, but the payment could not be voided (Charge ID: %2$s). Please void or refund it in your NMI account. NMI failure reason: %3$s', 'wc-nmi' ), $card_type, $transaction_id, $reason ) );
+			$this->log( "Gateway Error: void of {$transaction_id} failed: {$reason}" );
+			return false;
+		}
+
+		$order->add_order_note( sprintf( __( 'NMI approved a %1$s card, which is not an accepted card type, so the payment was voided (Charge ID: %2$s).', 'wc-nmi' ), $card_type, $transaction_id ) );
+		return true;
+	}
+
+	/**
+	 * Add an order note describing why an NMI request failed.
+	 *
+	 * @param WC_Order $order
+	 * @param mixed $payment_response WP_Error returned by nmi_request(), if any.
+	 * @param Exception $e
+	 *
+	 * @return void
+	 */
+	protected function add_failure_order_note( $order, $payment_response, $e ) {
+		$response = is_wp_error( $payment_response ) ? $payment_response->get_error_data() : null;
+
+		if ( isset( $response['type'] ) && in_array( $response['type'], array( 'generalError', 'inputError', 'validationError', 'internalError', 'authenticationError' ) ) ) {
+			$error_code = $response['error_code'] ?? $response['errorCode'] ?? '';
+			$order->add_order_note( trim( sprintf( __( "NMI failure reason: %s", 'wc-nmi' ), $error_code . ' - ' . ( $response['message'] ?? '' ) ) ) );
+		} elseif ( isset( $response['object'] ) && 'transaction' === $response['object'] ) {
+			$order->add_order_note( sprintf( __( 'NMI failure reason: %s', 'wc-nmi' ), ( $response['response_code'] ?? '' ) . ' - ' . ( $response['response_text'] ?? '' ) ) );
+		} else {
+			$order->add_order_note( sprintf( __( "NMI failure reason: %s", 'wc-nmi' ), $e->getMessage() ) );
+		}
+	}
+
+	/**
+	 * Check that the card in a Collect.js response is one of the allowed card types.
+	 *
+	 * The checkout scripts check this too, but that can be bypassed, so it's enforced here as well.
+	 *
+	 * @param array $js_response Decoded Collect.js response.
+	 *
+	 * @throws Exception If the card type isn't allowed.
+	 */
+	public function validate_js_card_type( $js_response ) {
+		// Collect.js leaves the type empty when it can't identify the card; the gateway decides then.
+		if ( empty( $js_response['card']['type'] ) ) {
+			return;
+		}
+
+		$type = $this->get_js_card_type( $js_response );
+
+		if ( ! in_array( $type, $this->allowed_card_types, true ) ) {
+			$this->log( sprintf( __( 'Card type being used is not one of supported types in plugin settings: %s', 'wc-nmi' ), $type ) );
+			throw new Exception( __( 'Card Type Not Accepted', 'wc-nmi' ) );
+		}
+	}
+
+	/**
+	 * The card type of a Collect.js response, as a setting name (e.g. 'visa').
+	 *
+	 * @param array $js_response
+	 * @return string
+	 */
+	protected function get_js_card_type( $js_response ) {
+		$type = (string) ( $js_response['card']['type'] ?? '' );
+
+		// Collect.js calls Diners Club "diners"; the setting uses "diners-club".
+		return 'diners' === $type ? 'diners-club' : $type;
+	}
+
+	/**
+	 * Card details from an NMI v5 transaction response.
+	 *
+	 * Wallet payments have no card fields on the page, so the order's card details come from the gateway's
+	 * response (payment_details.card_number is masked, e.g. 411111******1111).
+	 *
+	 * @param array|null $response NMI v5 transaction response.
+	 *
+	 * @return array|null With last4 and type (e.g. 'visa'), or null if unavailable.
+	 */
+	public function get_card_details_from_response( $response ) {
+		$details = is_array( $response ) && is_array( $response['payment_details'] ?? null ) ? $response['payment_details'] : array();
+		$number  = (string) ( $details['card_number'] ?? '' );
+
+		if ( strlen( $number ) < 4 ) {
+			return null;
+		}
+
+		// card_type is a label such as "Visa"; fall back to the card number prefix.
+		$type = ! empty( $details['card_type'] ) ? $this->get_card_type( $details['card_type'], 'label', 'name' ) : false;
+		if ( ! $type ) {
+			$type = $this->get_card_type( ! empty( $details['card_bin'] ) ? $details['card_bin'] : $number, 'pattern', 'name' );
+		}
+
+		return array(
+			'last4' => substr( $number, -4 ),
+			'type'  => $type ? $type : '',
+		);
+	}
+
+	/**
+	 * Split a card expiry date entered as "MM / YY" or "MM / YYYY".
+	 *
+	 * @param string $expiry
+	 * @return array Two-digit month and two-digit year.
+	 */
+	public function parse_card_expiry( $expiry ) {
+		$parts = array_map( 'trim', explode( '/', (string) $expiry ) );
+		$month = str_pad( $parts[0], 2, '0', STR_PAD_LEFT );
+		$year  = isset( $parts[1] ) ? substr( $parts[1], -2 ) : '';
+
+		return array( $month, $year );
+	}
+
+	/**
+	 * Send a request to NMI's v5 Payments API.
+	 *
+	 * @param string $endpoint "METHOD:endpoint", e.g. "POST:sale" or "POST:{transaction_id}/refund". A bare endpoint is a POST.
+	 * @param array  $args     Request body.
+	 * @return array|WP_Error The decoded response, or an error (declines included).
+	 */
+	function nmi_request( $endpoint, $args = array() ) {
+
+		// Without a private key (or while the saved settings still use the old username/password) nothing is sent.
+		if ( ! $this->is_configured() ) {
+			$error_message = __( 'NMI is not configured. Please enter your Private Key in the NMI settings.', 'wc-nmi' );
+			return new WP_Error( 'not_configured', apply_filters( 'woocommerce_nmi_error_message', $error_message, array() ) );
+		}
 
 		$gateway_debug = ( $this->logging && $this->debugging );
 
+		if ( false === strpos( $endpoint, ':' ) ) {
+			$endpoint = 'POST:' . $endpoint;
+		}
+		list( $request_method, $endpoint ) = explode( ':', $endpoint, 2 );
+
 		$request_url = $this->testmode ? self::NMI_REQUEST_URL_SANDBOX : self::NMI_REQUEST_URL_LIVE;
-		$request_url = apply_filters( 'wc_nmi_request_url', $request_url );
+		$request_url = apply_filters( 'wc_nmi_request_url', $request_url . $endpoint, $endpoint );
 
-        $auth_params = $this->api_keys ? array( 'security_key' => $this->private_key ) : array(
-            'username' => $this->username,
-            'password' => $this->password,
-        );
+		// A filter written for the old API returns a transact.php URL (e.g. a reseller's gateway host): keep the host, use v5.
+		if ( false !== strpos( $request_url, '/api/transact.php' ) ) {
+			$request_url = preg_replace( '#/api/transact\.php.*$#', '/api/v5/payments/' . $endpoint, $request_url );
+		}
 
-		$args['customer_receipt'] = isset( $args['customer_receipt'] ) ? $args['customer_receipt'] : $this->customer_receipt;
-		$args['ipaddress'] = isset( $args['ipaddress'] ) ? $args['ipaddress'] : WC_Geolocation::get_ip_address();
+		if ( isset( $args['currency'] ) && empty( $args['currency'] ) ) {
+			$args['currency'] = get_woocommerce_currency();
+		}
 
-        if( isset( $args['transactionid'] ) && empty( $args['transactionid'] ) ) {
-            unset( $args['transactionid'] );
-        }
+		foreach ( array( 'billing_address', 'shipping_address' ) as $address ) {
+			if ( ! empty( $args[ $address ]['country'] ) && empty( $args[ $address ]['state'] ) ) {
+				$args[ $address ]['state'] = 'NA';
+			}
+			// NMI rejects an empty phone, which is optional at checkout and in wallet payment sheets.
+			if ( isset( $args[ $address ]['phone'] ) && '' === trim( (string) $args[ $address ]['phone'] ) ) {
+				unset( $args[ $address ]['phone'] );
+			}
+		}
 
-        if( isset( $args['currency'] ) && empty( $args['currency'] ) ) {
-            $args['currency'] = get_woocommerce_currency();
-        }
-
-        if( !empty( $args['country'] ) && empty( $args['state'] ) && ! in_array( $args['type'], array( 'capture', 'void', 'refund' ) ) ) {
-            $args['state'] = 'NA';
-        }
-
-        $args = array_merge( $args, $auth_params );
-
-        // Setting custom timeout for the HTTP request
+		// Setting custom timeout for the HTTP request
 		add_filter( 'http_request_timeout', array( $this, 'http_request_timeout' ), 9999 );
 
-        $headers = array();
-        $response = wp_remote_post( $request_url, array( 'body' => $args , 'headers' => $headers ) );
+		$api_args = array(
+			'method'  => $request_method,
+			'headers' => array(
+				'Content-Type'  => 'application/json',
+				'Authorization' => $this->private_key,
+			),
+		);
 
-		$result = is_wp_error( $response ) ? $response : wp_remote_retrieve_body( $response );
-
-        // Saving to Log here
-		if( $gateway_debug ) {
-			$message = sprintf( "\nPosting to: \n%s\nRequest: \n%sResponse: \n%s", $request_url, print_r( $args, 1 ), print_r( $result, 1 ) );
-			WC_NMI_Logger::log( $message );
+		if ( ! in_array( $request_method, array( 'GET', 'DELETE' ) ) ) {
+			// An empty body must still be a JSON object: json_encode( array() ) is "[]".
+			$api_args['body'] = $args ? json_encode( $args ) : '{}';
 		}
+
+		$response = wp_remote_request( $request_url, $api_args );
 
 		remove_filter( 'http_request_timeout', array( $this, 'http_request_timeout' ), 9999 );
 
-		if ( is_wp_error( $result ) ) {
-			return $result;
-		} elseif( empty( $result ) ) {
+		$result = $this->parse_nmi_response( $response );
+
+		// Saving to Log here
+		if ( $gateway_debug ) {
+			$message = sprintf( "\nPosting to: \n%s %s\nRequest: \n%s\nResponse: \n%s", $request_method, $request_url, print_r( $this->get_loggable_args( $args ), 1 ), print_r( $result, 1 ) );
+			WC_NMI_Logger::log( $message );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Turn an NMI v5 HTTP response into the decoded transaction or a WP_Error.
+	 *
+	 * A transaction body is judged by its "response" (1 approved, 2 declined, 3 error) whatever the HTTP status;
+	 * other non-2xx responses carry an error body ({type, error_code, message, details}).
+	 *
+	 * @param array|WP_Error $response wp_remote_request() result.
+	 * @return array|WP_Error
+	 */
+	protected function parse_nmi_response( $response ) {
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$response_code = (int) wp_remote_retrieve_response_code( $response );
+		$body          = json_decode( wp_remote_retrieve_body( $response ), true, 512, JSON_BIGINT_AS_STRING );
+
+		if ( isset( $body['object'] ) && 'transaction' === $body['object'] ) {
+
+			if ( empty( $body['response'] ) || ! in_array( (int) $body['response'], array( 1, 2, 3 ), true ) ) {
+				$error_message = __( 'There was an error with the gateway response.', 'wc-nmi' );
+				return new WP_Error( 'invalid_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $body ), $body );
+			}
+
+			if ( 2 === (int) $body['response'] ) {
+				$error_message = '<!-- Error: ' . ( $body['response_code'] ?? '' ) . ' --> ' . __( 'Your card has been declined.', 'wc-nmi' );
+				return new WP_Error( 'decline_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $body ), $body );
+			}
+
+			if ( 3 === (int) $body['response'] ) {
+				$error_message = '<!-- Error: ' . ( $body['response_code'] ?? '' ) . ' --> ' . ( $body['response_text'] ?? '' );
+				return new WP_Error( 'error_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $body ), $body );
+			}
+
+			return $body;
+		}
+
+		// Error data is the decoded error body, never the raw HTTP response.
+		$error_data = is_array( $body ) ? $body : array( 'http_code' => $response_code );
+
+		if ( 401 === $response_code ) {
+			$error_message = $response_code . ' - ' . __( 'Unauthorized request. The merchant account credentials appear to be invalid.', 'wc-nmi' );
+			return new WP_Error( $response_code, apply_filters( 'woocommerce_nmi_error_message', $error_message, $error_data ), $error_data );
+		}
+
+		if ( $response_code < 200 || $response_code >= 300 ) {
+			if ( isset( $body['message'] ) ) {
+				$error_message = ( $body['error_code'] ?? $body['errorCode'] ?? $response_code ) . ' - ' . $body['message'];
+
+				$details = array();
+				foreach ( (array) ( $body['details'] ?? array() ) as $detail ) {
+					if ( ! empty( $detail['message'] ) ) {
+						$details[] = $detail['message'];
+					}
+				}
+				if ( $details ) {
+					$error_message .= ' (' . implode( '; ', $details ) . ')';
+				}
+			} else {
+				$error_message = $response_code . ' - ' . __( 'There was an error with the gateway response.', 'wc-nmi' );
+			}
+			return new WP_Error( $response_code, apply_filters( 'woocommerce_nmi_error_message', $error_message, $error_data ), $error_data );
+		}
+
+		// A success status needs a body to act on: an empty one must not mark an order paid or captured.
+		if ( empty( $body ) || ! is_array( $body ) ) {
 			$error_message = __( 'There was an error with the gateway response.', 'wc-nmi' );
-			return new WP_Error( 'invalid_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ) );
+			return new WP_Error( 'invalid_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $error_data ), $error_data );
 		}
 
-        parse_str( $result, $result );
+		return $body;
+	}
 
-        if( count( $result ) < 8 ) {
-			$error_message = sprintf( __( 'Unrecognized response from the gateway: %s', 'wc-nmi' ), $response );
-			return new WP_Error( 'invalid_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ) );
-        }
-
-        if( !isset( $result['response'] ) || !in_array( $result['response'], array( 1, 2, 3 ) ) ) {
-			$error_message = __( 'There was an error with the gateway response.', 'wc-nmi' );
-			return new WP_Error( 'invalid_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ) );
-        }
-
-        if( $result['response'] == 2 ) {
-			$error_message = '<!-- Error: ' . $result['response_code'] . ' --> ' . __( 'Your card has been declined.', 'wc-nmi' );
-			return new WP_Error( 'decline_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ), $result );
+	/**
+	 * Request args for the debug log, with the card number and CVV masked (Direct Post sends them).
+	 *
+	 * @param array $args
+	 * @return array
+	 */
+	protected function get_loggable_args( $args ) {
+		if ( ! empty( $args['payment_details']['card_number'] ) ) {
+			$number = preg_replace( '/\D/', '', $args['payment_details']['card_number'] );
+			$args['payment_details']['card_number'] = str_repeat( '*', max( 0, strlen( $number ) - 4 ) ) . substr( $number, -4 );
 		}
-
-        if( $result['response'] == 3 ) {
-			$error_message = '<!-- Error: ' . $result['response_code'] . ' --> ' . $result['responsetext'];
-			return new WP_Error( 'error_response', apply_filters( 'woocommerce_nmi_error_message', $error_message, $result ), $result );
+		if ( ! empty( $args['payment_details']['card_cvv'] ) ) {
+			$args['payment_details']['card_cvv'] = str_repeat( '*', strlen( $args['payment_details']['card_cvv'] ) );
 		}
-
-        return $result;
-
+		return $args;
 	}
 
 	function get_line_items( $order ) {
@@ -715,29 +1040,28 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		$this->log( "Info: Beginning refund for order $order_id for the amount of {$amount}" );
 
 		$args = array(
-			'amount'  			=> $amount,
-			'transactionid'		=> $order->get_transaction_id(),
-			'email' 			=> $order->get_billing_email(),
-			'type'		 		=> 'refund',
-			'order_description' => $reason,
-			'currency'			=> $this->get_payment_currency( $order_id ),
+			'amount' => wc_format_decimal( $amount, wc_get_price_decimals() ),
 		);
+		$args = apply_filters( 'wc_nmi_v5_request_args', $args, $order, 'refund' );
 
-		$args = apply_filters( 'wc_nmi_request_args', $args, $order );
+		$response = $this->nmi_request( 'POST:' . $order->get_transaction_id() . '/refund', $args );
 
-		$response = $this->nmi_request( $args );
+		if ( ! is_wp_error( $response ) && empty( $response['id'] ) ) {
+			$response = new WP_Error( 'invalid_response', __( 'There was an error with the gateway response.', 'wc-nmi' ), $response );
+		}
 
 		if ( is_wp_error( $response ) ) {
 			$this->log( "Gateway Error: " . $response->get_error_message() );
 			return $response;
-		} elseif ( ! empty( $response['transactionid'] ) ) {
-			$refund_message = sprintf( __( 'Refunded %s - Refund ID: %s - Reason: %s', 'wc-nmi' ), wc_price( $args['amount'], array( 'currency' => $args['currency'] ) ), $response['transactionid'], $reason );
-			$order->add_order_note( $refund_message );
-			$order->save();
-
-			$this->log( 'Success: ' . wp_strip_all_tags( $refund_message ) );
-			return true;
 		}
+
+		// The refund is a new NMI transaction with its own ID.
+		$refund_message = sprintf( __( 'Refunded %s - Refund ID: %s - Reason: %s', 'wc-nmi' ), wc_price( $args['amount'], array( 'currency' => $order->get_currency() ) ), $response['id'], $reason );
+		$order->add_order_note( $refund_message );
+		$order->save();
+
+		$this->log( 'Success: ' . wp_strip_all_tags( $refund_message ) );
+		return true;
 	}
 
     public function http_request_timeout( $timeout_value ) {
@@ -822,7 +1146,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	/**
 	 * Returns the order_id if on the checkout pay page
 	 *
-	 * @since 3.0.0
+	 * @since 3.3
 	 * @return int order identifier
 	 */
 	public function get_checkout_pay_page_order_id() {
@@ -860,6 +1184,20 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 		return apply_filters( 'wc_nmi_params_google_pay', array(
 			'gateway' => 'gatewayservices'
 		) );
+	}
+
+	/**
+	 * Whether the current page renders the checkout block, which has its own payment scripts.
+	 *
+	 * The pay page and Add payment method page still use the classic forms, even with the checkout block.
+	 *
+	 * @return bool
+	 */
+	public static function is_block_checkout_page() {
+		if ( is_checkout_pay_page() || is_add_payment_method_page() || ! function_exists( 'has_block' ) ) {
+			return false;
+		}
+		return has_block( 'woocommerce/checkout' );
 	}
 
 }

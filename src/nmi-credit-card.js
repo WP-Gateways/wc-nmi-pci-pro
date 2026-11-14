@@ -1,14 +1,14 @@
-import { useEffect, useState } from '@wordpress/element';
+import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { usePaymentProcessing } from './payment-processing';
 import './style.scss';
 import {
-	TEXT_DOMAIN,
-	PAYMENT_TIMEOUT_DURATION,
-	PAYMENT_UI_FIELDS,
+	debug,
 	getBlocksConfiguration,
 	getCreditCardIcons,
+	getFieldErrorMessage,
 	getPublicKey,
+	useCollectJS,
 } from './utils';
 
 /**
@@ -25,101 +25,26 @@ export const CreditCardComponent = ({
 	const { PaymentMethodIcons, ValidationInputError, LoadingMask } =
 		components;
 
-	const [isWindowAvailable, setIsWindowAvailable] = useState(false);
 	const [collectJSLoading, setCollectJSLoading] = useState(false);
 
-	const [publicKey, setPublicKey] = useState();
-
-	useEffect(() => {
-		if (typeof window != undefined) {
-			setIsWindowAvailable(true);
-		}
-
-		if (!publicKey) {
-			const k = getPublicKey();
-			setPublicKey(k ? k : null);
-		}
-	});
-
-	const configureCollectJs = () => {
-		try {
-			if (window.CollectJS !== undefined) {
-				setCollectJSLoading(true);
-				window.CollectJS.configure({
-					variant: 'inline',
-					customCss: {
-						height: '20px',
-						'line-height': '20px',
-						padding: '0px',
-						'border-width': '0px',
-						'pointer-events': 'auto',
-					},
-					styleSniffer: 'true',
-					fields: { ...PAYMENT_UI_FIELDS },
-					validationCallback: function (field, status, message) {
-						setCollectJSLoading(false);
-						handleValidationErrors({
-							field,
-							status,
-							message,
-						});
-					},
-					timeoutDuration: PAYMENT_TIMEOUT_DURATION,
-					timeoutCallback: function () {},
-					fieldsAvailableCallback: function () {
-						console.log('card fields available');
-						setCollectJSLoading(false);
-						window.collectResponse = '';
-						window.effectTriggerTimes = 0;
-					},
-					callback: handleSubmission,
-				});
-			} else {
-				throw new Error(getBlocksConfiguration()?.collect_js_error);
-			}
-		} catch (error) {
-			document
-				.querySelectorAll(
-					'.wc-block-nmi-gateway-container .wc-block-gateway-input, .wc-block-nmi-gateway-container label'
-				)
-				.forEach((el) => {
-					el.style.display = 'none';
-				});
-			var field = 'ccnumber',
-				status = false,
-				message = error.message;
-			handleValidationErrors({
-				field,
-				status,
-				message,
-			});
-		}
-	};
-
-	useEffect(() => {
-		if (publicKey && publicKey.length > 0 && isWindowAvailable) {
-			configureCollectJs();
-		}
-	}, [publicKey]);
+	// These come from the server-side settings, which don't change after the page loads.
+	const publicKey = getPublicKey();
+	const paymentMethod = publicKey ? 'card' : undefined;
 
 	//#region  On Submit
-	const [collectResponse, setCollectResponse] = useState('');
-	const handleSubmission = (response) => {
-		window.collectResponse = response;
-		setCollectResponse(response.token);
-	};
+	// Pending token request for the current payment attempt, resolved by the Collect.js callback.
+	const pendingTokenRef = useRef(null);
+	const handleSubmission = useCallback((response) => {
+		debug('Collect.js response', response);
+		pendingTokenRef.current?.resolve(response);
+		pendingTokenRef.current = null;
+	}, []);
+	// Collect.js gave up on the token request: end the attempt now, while it's still the current one.
+	const handleTimeout = useCallback(() => {
+		pendingTokenRef.current?.reject(new Error(getBlocksConfiguration()?.timeout_error));
+		pendingTokenRef.current = null;
+	}, []);
 
-	//#endregion
-
-	//#region Errors
-
-	const onNMIError = usePaymentProcessing(
-		billing,
-		emitResponse,
-		onPaymentSetup,
-		onCheckoutFail,
-		collectResponse
-	);
 	//#endregion
 
 	//#region Validator
@@ -130,6 +55,13 @@ export const CreditCardComponent = ({
 	const handleValidationErrors = (response) => {
 		const { status, message, field } = response;
 		setCollectJSLoading(false);
+
+		// Collect.js reports invalid fields here instead of calling back with a token,
+		// so end the pending payment attempt now rather than waiting for the timeout.
+		if (!status && pendingTokenRef.current) {
+			pendingTokenRef.current.reject(new Error(getFieldErrorMessage(field, message)));
+			pendingTokenRef.current = null;
+		}
 
 		if (field === 'ccnumber') {
 			setccnumber(status ? '' : message);
@@ -156,6 +88,25 @@ export const CreditCardComponent = ({
 
 	//#endregion
 
+	//#region Errors
+
+	useCollectJS(
+		paymentMethod,
+		setCollectJSLoading,
+		handleValidationErrors,
+		handleSubmission,
+		handleTimeout
+	);
+
+	const onNMIError = usePaymentProcessing(
+		billing,
+		emitResponse,
+		onPaymentSetup,
+		onCheckoutFail,
+		pendingTokenRef
+	);
+	//#endregion
+
 	//#region Field Render
 
 	const CollectJSElements = () => (
@@ -168,9 +119,9 @@ export const CreditCardComponent = ({
 					{/* a NMI Element will be inserted here. */}
 				</div>
 				<label htmlFor="nmi-card-number-element">
-					{__('Card Number', TEXT_DOMAIN)}
+					{__('Card Number', 'wc-nmi')}
 				</label>
-				{ccnumber && <ValidationInputError errorMessage={ccnumber} />}
+				{ccnumber && <ValidationInputError errorMessage={ccnumber}/>}
 			</div>
 			<div className="wc-block-gateway-container wc-card-expiry-element">
 				<div
@@ -180,9 +131,9 @@ export const CreditCardComponent = ({
 					{/* a NMI Element will be inserted here. */}
 				</div>
 				<label htmlFor="nmi-card-expiry-element">
-					{__('Expiry Date', TEXT_DOMAIN)}
+					{__('Expiry Date', 'wc-nmi')}
 				</label>
-				{ccexp && <ValidationInputError errorMessage={ccexp} />}
+				{ccexp && <ValidationInputError errorMessage={ccexp}/>}
 			</div>
 			<div className="wc-block-gateway-container wc-card-cvc-element">
 				<div
@@ -192,12 +143,12 @@ export const CreditCardComponent = ({
 					{/* a NMI Element will be inserted here. */}
 				</div>
 				<label htmlFor="nmi-card-cvc-element">
-					{__('Card Code (CVC)', TEXT_DOMAIN)}
+					{__('Card Code (CVC)', 'wc-nmi')}
 				</label>
-				{cccvv && <ValidationInputError errorMessage={cccvv} />}
+				{cccvv && <ValidationInputError errorMessage={cccvv}/>}
 			</div>
 		</div>
-	);
+);
 
 	//#endregion
 
@@ -205,11 +156,11 @@ export const CreditCardComponent = ({
 		<LoadingMask
 			isLoading={collectJSLoading}
 			showSpinner='true'
-			screenReaderLabel={__('Loading payment fields…', TEXT_DOMAIN)}
+			screenReaderLabel={__('Loading payment fields…', 'wc-nmi')}
 		>
 			{publicKey ? CollectJSElements() : 'public key not available yet'}
 
-			{PaymentMethodIcons && cardIcons.length && (
+			{PaymentMethodIcons && cardIcons.length > 0 && (
 				<PaymentMethodIcons icons={cardIcons} align="left" />
 			)}
 		</LoadingMask>

@@ -1,18 +1,19 @@
 {
 	"name": "extension/wp-nmi-gateway-pci-woocommerce",
 	"description": "WooCommerce plugin",
-	"autoload": {
+	"require-dev": {
+		"brain/monkey": "^2.6",
+		"phpunit/phpunit": "^9.6"
+	},
+	"autoload-dev": {
 		"psr-4": {
-			"WpNmiGatewayPciWoocommerce\\": "includes/"
+			"WCNMI\\Tests\\": "tests/php/"
 		}
 	},
-	"require-dev": {
-		"phpunit/phpunit": "^9.0",
-		"automattic/jetpack-autoloader": "^2"
+	"scripts": {
+		"test": "phpunit"
 	},
 	"config": {
-		"allow-plugins": {
-			"automattic/jetpack-autoloader": true
-		}
+		"sort-packages": true
 	}
 }

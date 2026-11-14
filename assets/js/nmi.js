@@ -348,6 +348,11 @@ jQuery( function( $ ) {
 		onNMIResponse: function( response ) {
 			debug( 'Collect.js response', response );
 
+			// Collect.js sometimes puts the card under lookupData only.
+			if ( ( ! response.card || ! response.card.type ) && response.lookupData && response.lookupData.card ) {
+				response.card = response.lookupData.card;
+			}
+
 			if( response.card && response.card.type != null ) {
 				// Reset for each token, so an earlier allowed card doesn't let a disallowed one through.
 				card_allowed = false;

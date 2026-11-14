@@ -40,6 +40,18 @@ export const createDeferred = (timeoutMs, timeoutMessage) => {
 };
 
 /**
+ * @description The card of a Collect.js response: Collect.js sometimes puts it under lookupData only.
+ * @param {Object|null} response Collect.js response.
+ * @returns {Object|null} The card, or null when neither has a card type.
+ */
+export const getResponseCard = (response) => {
+	if (response?.card?.type) {
+		return response.card;
+	}
+	return response?.lookupData?.card?.type ? response.lookupData.card : null;
+};
+
+/**
  * @description NMI Settings
  * @returns
  */

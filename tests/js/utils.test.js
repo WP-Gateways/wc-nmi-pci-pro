@@ -15,6 +15,7 @@ const {
 	debug,
 	getCreditCardIcons,
 	getFieldErrorMessage,
+	getResponseCard,
 	useCollectJS,
 } = require( '../../src/utils' );
 const { renderHook } = require( '@testing-library/react' );
@@ -163,3 +164,17 @@ describe( 'getCreditCardIcons', () => {
 	} );
 } );
 
+describe( 'getResponseCard', () => {
+	it( 'uses the card of the token response', () => {
+		expect( getResponseCard( { card: { type: 'visa' }, lookupData: { card: { type: 'amex' } } } ) ).toEqual( { type: 'visa' } );
+	} );
+
+	it( 'falls back to lookupData when the response card has no type', () => {
+		expect( getResponseCard( { card: { number: '' }, lookupData: { card: { type: 'amex' } } } ) ).toEqual( { type: 'amex' } );
+	} );
+
+	it( 'is null when neither has a card type', () => {
+		expect( getResponseCard( { token: 'x' } ) ).toBeNull();
+		expect( getResponseCard( null ) ).toBeNull();
+	} );
+} );

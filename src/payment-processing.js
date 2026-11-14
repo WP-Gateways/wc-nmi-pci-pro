@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from '@wordpress/element';
 import {
 	createDeferred,
 	getBlocksConfiguration,
+	getResponseCard,
 	TOKEN_REQUEST_TIMEOUT,
 } from './utils';
 
@@ -52,13 +53,16 @@ export const usePaymentProcessing = (
 
 				const response = await deferred.promise;
 
-				if (!response?.card?.type) {
+				if (!response?.token) {
 					throw new Error(getBlocksConfiguration()?.timeout_error);
 				}
 
+				// Without a card type the server checks the card NMI charged.
+				const card = getResponseCard(response);
 				if (
+					card &&
 					getBlocksConfiguration()?.allowed_card_types.indexOf(
-						response.card.type.replace('diners', 'diners-club')
+						card.type.replace('diners', 'diners-club')
 					) === -1
 				) {
 					return {

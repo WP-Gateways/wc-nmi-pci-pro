@@ -91,7 +91,7 @@ describe( 'usePaymentProcessing', () => {
 		expect( ( await second ).type ).toBe( 'success' );
 	} );
 
-	it( 'ignores a late callback from the first attempt during the second attempt', async () => {
+	it( 'a late resolve of the first request does not settle the second', async () => {
 		setup();
 		const first = submit();
 		const firstRequest = pendingTokenRef.current;
@@ -102,7 +102,7 @@ describe( 'usePaymentProcessing', () => {
 		const secondRequest = pendingTokenRef.current;
 		expect( secondRequest ).not.toBe( firstRequest );
 
-		// The first attempt's token arrives late: it must not settle the second attempt or throw.
+		// Each attempt has its own request: settling the first one late doesn't touch the second.
 		expect( () => firstRequest.resolve( visa( 'late' ) ) ).not.toThrow();
 		expect( pendingTokenRef.current ).toBe( secondRequest );
 
@@ -138,5 +138,35 @@ describe( 'usePaymentProcessing', () => {
 		jest.advanceTimersByTime( TOKEN_REQUEST_TIMEOUT * 2 );
 		await Promise.resolve();
 		expect( unhandled ).toEqual( [] );
+	} );
+
+	it( 'reads the card from lookupData when the token has none', async () => {
+		setup();
+		const result = submit();
+		pendingTokenRef.current.resolve( { token: 'one', lookupData: { card: { type: 'visa' } } } );
+		const response = await result;
+		expect( response.type ).toBe( 'success' );
+		expect( JSON.parse( response.meta.paymentMethodData.nmi_js_response ).token ).toBe( 'one' );
+	} );
+
+	it( 'refuses a disallowed card found under lookupData', async () => {
+		setup();
+		const result = submit();
+		pendingTokenRef.current.resolve( { token: 'one', lookupData: { card: { type: 'amex' } } } );
+		expect( await result ).toEqual( { type: 'error', message: 'Card not allowed' } );
+	} );
+
+	it( 'sends a token without a card type for the server to check against NMI', async () => {
+		setup();
+		const result = submit();
+		pendingTokenRef.current.resolve( { token: 'one' } );
+		expect( ( await result ).type ).toBe( 'success' );
+	} );
+
+	it( 'fails when Collect.js calls back without a token', async () => {
+		setup();
+		const result = submit();
+		pendingTokenRef.current.resolve( { card: { type: 'visa' } } );
+		expect( await result ).toEqual( { type: 'error', message: 'Timed out' } );
 	} );
 } );

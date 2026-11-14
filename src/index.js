@@ -1,10 +1,10 @@
 import { registerPaymentMethod } from '@woocommerce/blocks-registry';
 import { __ } from '@wordpress/i18n';
 import { CreditCardComponent } from './nmi-credit-card';
+import { CreditCardPreview } from './previews';
 import './style.scss';
 import {
 	Label,
-	TEXT_DOMAIN,
 	PAYMENT_METHOD_NAME,
 	getBlocksConfiguration,
 } from './utils';
@@ -17,9 +17,9 @@ const nmiCCPaymentMethod = {
 	name: PAYMENT_METHOD_NAME,
 	label: <Label />,
 	content: <NMICreditCard />,
-	edit: <NMICreditCard />,
+	edit: <CreditCardPreview />,
 	canMakePayment: () => true,
-	ariaLabel: __('NMI payment method', TEXT_DOMAIN),
+	ariaLabel: __('NMI payment method', 'wc-nmi'),
 	supports: {
 		showSavedCards: getBlocksConfiguration()?.showSavedCards ?? false,
 		showSaveOption: getBlocksConfiguration()?.showSaveOption ?? false,

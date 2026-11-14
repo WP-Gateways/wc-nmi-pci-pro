@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from '@wordpress/element';
-import { getBlocksConfiguration, PAYMENT_METHOD_NAME, PAYMENT_TIMEOUT_DURATION } from './utils';
+import {
+	createDeferred,
+	getBlocksConfiguration,
+	TOKEN_REQUEST_TIMEOUT,
+} from './utils';
 
 /**
  *  @description Custom hook to manage the payment proccessing for NMI gateway.
@@ -9,33 +13,19 @@ export const usePaymentProcessing = (
 	emitResponse,
 	onPaymentSetup,
 	onCheckoutFail,
-	collectResponse
+	pendingTokenRef
 ) => {
 	const [error, setError] = useState('');
 
 	const onNMIError = useCallback((message) => {
-		console.log('onNMIError :', message);
 		setError(message);
 		return message ? message : false;
 	}, []);
 
 	// hook into and register callbacks for events
 	useEffect(() => {
-		const waitForCollectJsToken = async () => {
-			const tokenCheckInterval = 2000;
-			while (
-				!window.collectResponse ||
-				window.collectResponse.length < 5
-			) {
-				window.effectTriggerTimes = window.effectTriggerTimes + 1;
-				if (window.effectTriggerTimes > (PAYMENT_TIMEOUT_DURATION/tokenCheckInterval)) {
-					throw new Error(getBlocksConfiguration()?.timeout_error);
-				}
-				await new Promise((res) => setTimeout(res, tokenCheckInterval));
-			}
-		};
-
 		const onSubmit = async () => {
+			let deferred;
 			try {
 				// if there's an error return that.
 				if (error) {
@@ -44,53 +34,46 @@ export const usePaymentProcessing = (
 						message: error,
 					};
 				}
-				window.collectResponse = '';
-				window.CollectJS.startPaymentRequest();
-				await waitForCollectJsToken().catch((err) => {
-					console.error('waitForCollectJsToken error: ', err);
-				});
+
+				// Each attempt waits on its own promise, so a late token from an earlier attempt is ignored.
+				deferred = createDeferred(
+					TOKEN_REQUEST_TIMEOUT,
+					getBlocksConfiguration()?.timeout_error
+				);
+				pendingTokenRef.current = deferred;
+				try {
+					window.CollectJS.startPaymentRequest();
+				} catch (startError) {
+					// Settle the attempt so its timer can't reject unhandled later.
+					deferred.promise.catch(() => {});
+					deferred.reject(startError);
+					throw startError;
+				}
+
+				const response = await deferred.promise;
+
+				if (!response?.card?.type) {
+					throw new Error(getBlocksConfiguration()?.timeout_error);
+				}
 
 				if (
-					window.collectResponse &&
-					window.collectResponse.card.type != null
+					getBlocksConfiguration()?.allowed_card_types.indexOf(
+						response.card.type.replace('diners', 'diners-club')
+					) === -1
 				) {
-					if (
-						getBlocksConfiguration()?.allowed_card_types.indexOf(
-							window.collectResponse.card.type.replace(
-								'diners',
-								'diners-club'
-							)
-						) === -1
-					) {
-						return {
-							type: emitResponse.responseTypes.ERROR,
-							message:
-								getBlocksConfiguration()?.card_disallowed_error,
-						};
-					}
-				} else {
 					return {
 						type: emitResponse.responseTypes.ERROR,
-						message: getBlocksConfiguration()?.timeout_error,
+						message: getBlocksConfiguration()?.card_disallowed_error,
 					};
 				}
-				const billingAddress = billing.billingAddress;
 
-				const nmiArgs = {
-					nmi_token: window.collectResponse?.token,
-					nmi_js_response: JSON.stringify(window.collectResponse),
-				};
+				const billingAddress = billing.billingAddress;
 
 				return {
 					type: emitResponse.responseTypes.SUCCESS,
 					meta: {
 						paymentMethodData: {
-							...nmiArgs,
-							billing_email: billingAddress.email,
-							billing_first_name: billingAddress?.first_name ?? '',
-							billing_last_name: billingAddress?.last_name ?? '',
-							paymentMethod: PAYMENT_METHOD_NAME,
-							paymentRequestType: 'cc',
+							nmi_js_response: JSON.stringify(response),
 						},
 						billingAddress,
 					},
@@ -98,8 +81,13 @@ export const usePaymentProcessing = (
 			} catch (e) {
 				return {
 					type: emitResponse.responseTypes.ERROR,
-					message: e,
+					message: e?.message || String(e),
 				};
+			} finally {
+				// Only clear our own request, not one a newer attempt has already registered.
+				if (pendingTokenRef.current === deferred) {
+					pendingTokenRef.current = null;
+				}
 			}
 		};
 
@@ -109,13 +97,11 @@ export const usePaymentProcessing = (
 		};
 	}, [
 		onPaymentSetup,
-		billing.billingAddress,
-		onNMIError,
+		billing,
 		error,
-		emitResponse.noticeContexts.PAYMENTS,
+		pendingTokenRef,
 		emitResponse.responseTypes.ERROR,
 		emitResponse.responseTypes.SUCCESS,
-		collectResponse,
 	]);
 
 	// hook into and register callbacks for events.

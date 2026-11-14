@@ -4,10 +4,10 @@ Donate link: https://wpgateways.com/support/send-payment/
 Tags: nmi, network merchants, payment gateway, woocommerce, pci
 Plugin URI: https://bitbucket.org/pledged/wc-nmi-pci-pro
 Author URI: https://pledgedplugins.com
-Requires at least: 4.4
+Requires at least: 4.7
 Tested up to: 7.0
-Requires PHP: 5.6
-Stable tag: 1.2.12
+Requires PHP: 7.0
+Stable tag: 2.0.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -66,7 +66,7 @@ This plugin is not affiliated with or supported by NMI, WooCommerce.com or Autom
 4. Under the Payments tab, you will find all the available payment methods. Find the 'NMI' link in the list and click it.
 5. On this page you will find all of the configuration options for this payment gateway.
 6. Enable the method by using the checkbox.
-7. Enter the NMI API keys (Private Key and Public Key).
+7. Enter the NMI API keys (Private Key and Public Tokenization Key). Create them in your NMI account under Settings > Security Keys.
 
 That's it! You are ready to accept credit cards with your NMI merchant account now connected to WooCommerce.
 
@@ -76,6 +76,29 @@ That's it! You are ready to accept credit cards with your NMI merchant account n
 A valid SSL certificate is required to ensure your customer credit card details are safe and make your site PCI DSS compliant. This plugin does not store the customer credit card numbers or sensitive information on your website.
 
 == Changelog ==
+
+= 2.0.0 =
+* Upgrade notice: the plugin now uses NMI's v5 Payments API. Username/password authentication (the API Keys option) is removed and a Private Key is required. Sites still using username/password are switched off at checkout, with an admin notice, until a Private Key is saved.
+* Upgrade notice: if you have custom code on the `wc_nmi_request_args` filter, move it to `wc_nmi_v5_request_args( $args, $order, $endpoint )`, which uses the nested v5 fields (endpoint: sale, auth, capture, void, refund). An admin notice is shown while code still hooks the old filter.
+* Switched from transact.php to the NMI v5 Payments API
+* Removed username/password authentication
+* Replaced the `wc_nmi_request_args` filter with `wc_nmi_v5_request_args`
+* Added the endpoint as a second argument to the `wc_nmi_request_url` filter; a filtered transact.php URL is moved to /api/v5/payments/ on the same host
+* Hook data in `woocommerce_nmi_error_message` and `wc_gateway_nmi_process_payment` now uses v5 response keys (id, auth_code, response_text)
+* Integrated with the processor contract of the WooCommerce Apple Pay and Google Pay extension
+* Fixed Apple Pay and Google Pay not taking priority over a leftover card token
+* Orders now store the card last 4 digits and type, taken from NMI's response
+* Collect.js card types are now checked on the server; a payment NMI approves for a card type that isn't accepted is voided, or the order is held for review if the void fails
+* An empty phone number is no longer sent to NMI
+* Fixed an empty gateway response marking an order as paid or captured
+* Fixed admin notices showing twice and the gateway being rebuilt for capture and void
+* Added a warning when no Public Tokenization Key is set, as card numbers then post through your server (Direct Post)
+* The checkout no longer stays blocked when Collect.js fails to load; an error is shown instead
+* Collect.js is no longer loaded on the cart page, the order received page or block checkout pages
+* Block checkout: Collect.js timeout handling, card fields kept inside their border, wider expiry field, no stray "0" without card icons
+* The Public Tokenization Key is escaped in the Collect.js script tag
+* Debug log now masks the card number and CVV
+* Requires PHP 7.0 or higher and WordPress 4.7 or higher (the minimum for WooCommerce 3.3)
 
 = 1.2.12 =
 * Updated compatibility info to WordPress 7.0

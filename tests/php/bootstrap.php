@@ -67,6 +67,7 @@ if ( ! function_exists( 'plugins_url' ) ) {
 }
 
 require_once __DIR__ . '/stubs/woocommerce.php';
+require_once __DIR__ . '/stubs/wcapgp.php';
 
 // The main plugin file defines the WC_NMI_PCI class and the plugin constants.
 require_once dirname( __DIR__, 2 ) . '/gateway.php';

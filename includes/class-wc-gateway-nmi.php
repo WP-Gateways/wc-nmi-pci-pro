@@ -452,7 +452,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
     public function add_public_key_to_js( $tag, $handle ) {
        if ( 'nmi-collect-js' !== $handle ) return $tag;
-       return str_replace( ' src', ' data-tokenization-key="' . $this->public_key . '" src', $tag );
+       return str_replace( ' src', ' data-tokenization-key="' . esc_attr( $this->public_key ) . '" src', $tag );
     }
 
 	/**

@@ -58,4 +58,22 @@ class PaymentScriptsTest extends TestCase {
 
 		$this->assertSame( array(), $this->enqueued );
 	}
+
+	public function test_the_tokenization_key_is_added_to_the_collect_js_tag_escaped(): void {
+		$gateway = $this->gateway( WC_Gateway_NMI::class, array( 'public_key' => 'abc"><script>x</script>' ) );
+		Functions\when( 'esc_attr' )->alias( function ( $value ) {
+			return htmlspecialchars( $value, ENT_QUOTES );
+		} );
+
+		$tag = $gateway->add_public_key_to_js( '<script src="https://sandbox.nmi.com/token/Collect.js"></script>', 'nmi-collect-js' );
+
+		$this->assertStringContainsString( 'data-tokenization-key="abc&quot;&gt;&lt;script&gt;x&lt;/script&gt;" src=', $tag );
+		$this->assertStringNotContainsString( '<script>x', $tag );
+	}
+
+	public function test_other_script_tags_are_left_alone(): void {
+		$tag = '<script src="https://example.com/other.js"></script>';
+
+		$this->assertSame( $tag, $this->nmi()->add_public_key_to_js( $tag, 'other' ) );
+	}
 }

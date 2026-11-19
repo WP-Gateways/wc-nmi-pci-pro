@@ -161,6 +161,7 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 			// Blocks-specific options
 			[
 				'title'                          => $this->get_title(),
+				'description'                    => $this->get_description(),
 				'icons'                          => $this->get_icons(),
 				'supports'                       => $this->get_supported_features(),
 				'showSavedCards'                 => $this->get_show_saved_cards(),
@@ -223,6 +224,23 @@ final class WC_NMI_PCI_Blocks_Support extends AbstractPaymentMethodType {
 	private function get_show_save_option() {
 		$saved_cards = $this->get_show_saved_cards();
 		return apply_filters( 'wc_nmi_display_save_payment_method_checkbox', filter_var( $saved_cards, FILTER_VALIDATE_BOOLEAN ) );
+	}
+
+	/**
+	 * The gateway description as HTML, as classic checkout shows it. In sandbox mode it includes the sandbox mode
+	 * notice and test card instructions.
+	 *
+	 * @return string
+	 */
+	private function get_description() {
+		$gateways = WC()->payment_gateways->get_available_payment_gateways();
+		if ( ! isset( $gateways['nmi'] ) ) {
+			return '';
+		}
+
+		$description = trim( (string) $gateways['nmi']->get_description() );
+
+		return '' === $description ? '' : wpautop( wptexturize( wp_kses_post( $description ) ) );
 	}
 
 	/**

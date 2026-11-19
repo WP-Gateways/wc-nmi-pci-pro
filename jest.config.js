@@ -18,6 +18,7 @@ module.exports = {
 	moduleNameMapper: {
 		'\\.(scss|css)$': '<rootDir>/tests/js/__mocks__/style.js',
 		'^@woocommerce/settings$': '<rootDir>/tests/js/__mocks__/wc-settings.js',
+		'^@woocommerce/blocks-registry$': '<rootDir>/tests/js/__mocks__/blocks-registry.js',
 	},
 	collectCoverageFrom: [ 'src/**/*.js' ],
 };

@@ -21,7 +21,7 @@ msgstr ""
 
 #. Plugin URI of the plugin
 #: gateway.php
-msgid "https://bitbucket.org/pledged/wc-nmi-pci-pro"
+msgid "https://github.com/WP-Gateways/wc-nmi-pci-pro"
 msgstr ""
 
 #. Description of the plugin

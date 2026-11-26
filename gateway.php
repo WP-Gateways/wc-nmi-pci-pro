@@ -108,9 +108,23 @@ class WC_NMI_PCI {
 	public function plugin_action_links( $links ) {
 		$plugin_links = array(
 			'<a href="' . admin_url( 'admin.php?page=wc-settings&tab=checkout&section=nmi' ) . '">' . __( 'Settings', 'wc-nmi' ) . '</a>',
-			'<a href="https://pledgedplugins.com/support/" target="_blank">' . __( 'Support', 'wc-nmi' ) . '</a>',
 		);
 		return array_merge( $plugin_links, $links );
+	}
+
+	/**
+	 * Add a Support link to the plugin's row on the Plugins screen. It's off-site, so it goes here rather than
+	 * with Settings under the plugin name.
+	 *
+	 * @param array  $links Row meta links.
+	 * @param string $file  Plugin file of the row.
+	 * @return array
+	 */
+	public function plugin_row_meta( $links, $file ) {
+		if ( plugin_basename( WC_NMI_PCI_MAIN_FILE ) === $file ) {
+			$links[] = '<a href="https://pledgedplugins.com/support/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Support', 'wc-nmi' ) . '</a>';
+		}
+		return $links;
 	}
 
 	/**
@@ -161,6 +175,7 @@ class WC_NMI_PCI {
         require_once( 'includes/class-wc-gateway-nmi-logger.php' );
 
         add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_action_links' ), 11 );
+		add_filter( 'plugin_row_meta', array( $this, 'plugin_row_meta' ), 10, 2 );
 		add_action( 'init', array( $this, 'load_plugin_textdomain' ) );
 		add_filter( 'wcapgp_processor_integration', array( __CLASS__, 'wallet_integration' ), 10, 3 );
 

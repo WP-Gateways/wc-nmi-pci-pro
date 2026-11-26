@@ -46,7 +46,7 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 	public function __construct() {
 		$this->id                   = 'nmi';
 		$this->method_title         = __( 'NMI', 'wc-nmi' );
-		$this->method_description 	= __( 'NMI works by adding credit card fields on the checkout and then sending the details to the gateway for processing the transactions.', 'wc-nmi' ) . '<h3>' . __( 'Upgrade to Enterprise', 'wc-nmi' ) . '</h3>' . sprintf( __( 'Enterprise version is a full blown plugin that provides support for <strong>processing subscriptions, pre-orders, one click upsells and payments via saved cards or eCheck accounts</strong>. It also has an option to <strong>enable 3D Secure 2 card verification</strong> and make your site Strong Customer Authentication (SCA) compliant. Some of these functionalities require <strong>other premium plugins</strong> that are mentioned on the page linked below. No card details or other sensitive data is stored on your site.<br/><br/><a href="%s" target="_blank">Click here</a> to upgrade to Enterprise version or to know more about it.', 'wc-nmi' ), 'https://pledgedplugins.com/products/nmi-payment-gateway-woocommerce/' );
+		$this->method_description 	= $this->get_gateway_description();
 		$this->has_fields           = true;
 		$this->supports             = array(
 			'products',
@@ -157,7 +157,12 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
 
 	}
 
-    public function admin_options() { ?>
+    public function admin_options() {
+		// The upgrade pitch is added only here: the Payments list shows the description as plain text, where it
+		// would run into it.
+		$description              = $this->method_description;
+		$this->method_description = $description . $this->get_settings_note();
+		?>
 		<script>
             //alert(123);
             jQuery( function( $ ) {
@@ -187,7 +192,27 @@ class WC_Gateway_NMI extends WC_Payment_Gateway_CC {
                 wc_nmi_admin.init();
             } );
         </script>
-		<?php parent::admin_options();
+		<?php
+		parent::admin_options();
+		$this->method_description = $description;
+	}
+
+	/**
+	 * Plain-text summary of the gateway: its description in WooCommerce's Payments list and on the settings page.
+	 *
+	 * @return string
+	 */
+	public function get_gateway_description() {
+		return __( 'NMI works by adding credit card fields on the checkout and then sending the details to the gateway for processing the transactions.', 'wc-nmi' );
+	}
+
+	/**
+	 * HTML shown below the description on the settings page only: the upgrade pitch.
+	 *
+	 * @return string
+	 */
+	protected function get_settings_note() {
+		return '<h3>' . __( 'Upgrade to Enterprise', 'wc-nmi' ) . '</h3><p>' . sprintf( __( 'Enterprise version is a full blown plugin that provides support for <strong>processing subscriptions, pre-orders, one click upsells and payments via saved cards or eCheck accounts</strong>. It also has an option to <strong>enable 3D Secure 2 card verification</strong> and make your site Strong Customer Authentication (SCA) compliant. Some of these functionalities require <strong>other premium plugins</strong> that are mentioned on the page linked below. No card details or other sensitive data is stored on your site.<br/><br/><a href="%s" target="_blank">Click here</a> to upgrade to Enterprise version or to know more about it.', 'wc-nmi' ), 'https://pledgedplugins.com/products/nmi-payment-gateway-woocommerce/' ) . '</p>';
 	}
 
 	/**

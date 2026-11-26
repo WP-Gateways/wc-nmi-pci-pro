@@ -1,4 +1,5 @@
 import { registerPaymentMethod } from '@woocommerce/blocks-registry';
+import { RawHTML } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { CreditCardComponent } from './nmi-credit-card';
 import { CreditCardPreview } from './previews';
@@ -9,8 +10,17 @@ import {
 	getBlocksConfiguration,
 } from './utils';
 
+// The gateway description, as classic checkout shows it: in sandbox mode, the notice and test card details.
+const Description = ({ description }) =>
+	description ? <RawHTML className="wc-nmi-description">{description}</RawHTML> : null;
+
 const NMICreditCard = (props) => {
-	return <CreditCardComponent {...props} />;
+	return (
+		<>
+			<Description description={getBlocksConfiguration()?.description} />
+			<CreditCardComponent {...props} />
+		</>
+	);
 };
 
 const nmiCCPaymentMethod = {
